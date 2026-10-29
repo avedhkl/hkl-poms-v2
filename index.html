@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>HKL-PoMS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  /* Paste the Apps Script web app URL (Deploy > Manage deployments > Web app URL). */
+  var API_URL = 'https://script.google.com/macros/s/AKfycbwl-0G_UhQXln0RpIY6ruWDs35jW1JBvXbsRcr8GlIF5_0M0g6E_78p0TZHghwSQO8/exec';
+</script>
+<style>
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --surface-2: #f8fafb; --line: #e3e8ed; --line-2: #d3dbe2;
+  --text: #17222c; --muted: #5d6b78; --faint: #8794a0;
+  --accent: #0f766e; --accent-ink: #ffffff; --accent-soft: #e3f3f1;
+  --ok: #157f4a; --ok-soft: #e3f5ea; --warn: #a3620a; --warn-soft: #fcf1dd; --bad: #b42335; --bad-soft: #fbe6e9;
+  --info: #285e9b; --info-soft: #e5eef8;
+  --shadow: 0 1px 2px rgba(16, 32, 48, .05), 0 4px 16px rgba(16, 32, 48, .05);
+  --r: 12px; --r-sm: 8px;
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+body[data-role="Supervisor"] { --accent: #2c5282; --accent-soft: #e6edf7; }
+body[data-role="Admin"] { --accent: #7b2d42; --accent-soft: #f5e7eb; }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f151b; --surface: #161e26; --surface-2: #1b252e; --line: #26323d; --line-2: #33414e;
+    --text: #e6edf3; --muted: #9fb0bf; --faint: #74859a;
+    --accent: #2bb3a5; --accent-ink: #06201d; --accent-soft: #123532;
+    --ok: #4cc38a; --ok-soft: #12301f; --warn: #e7a54a; --warn-soft: #33260f; --bad: #f2788a; --bad-soft: #3a1820;
+    --info: #79a8e0; --info-soft: #172840; --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  }
+  body[data-role="Supervisor"] { --accent: #7ea6dc; --accent-ink: #0b1a2c; --accent-soft: #19283d; }
+  body[data-role="Admin"] { --accent: #e08aa0; --accent-ink: #2b0d16; --accent-soft: #3a1a24; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); }
+body { min-height: 100vh; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); }
+.hidden { display: none !important; }
+.mono { font-family: var(--mono); font-feature-settings: 'tnum'; }
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+.small { font-size: 13px; }
+.nowrap { white-space: nowrap; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- top bar ---------- */
+.top { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 1240px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand b { font-weight: 700; letter-spacing: .2px; }
+.brand .sub { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pulse { width: 64px; height: 24px; flex: none; }
+.pulse path { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 130; stroke-dashoffset: 130; animation: beat 2.4s linear infinite; }
+@keyframes beat { 0% { stroke-dashoffset: 130; } 60% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -130; } }
+.spacer { flex: 1; }
+.who { text-align: right; font-size: 12px; line-height: 1.3; min-width: 0; }
+.who b { display: block; font-size: 13px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sync { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.sync i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); display: inline-block; }
+.sync.busy i { background: var(--warn); animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: .3; } }
+.nav { max-width: 1240px; margin: 0 auto; padding: 0 12px; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.nav::-webkit-scrollbar { display: none; }
+.nav a { position: relative; padding: 10px 12px 12px; text-decoration: none; color: var(--muted); font-weight: 500; font-size: 14px; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.nav a:hover { color: var(--text); }
+.nav a.on { color: var(--accent); }
+.nav a.on::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: var(--accent); }
+.nav .count { font: 600 11px var(--mono); background: var(--bad); color: #fff; border-radius: 10px; padding: 1px 6px; }
+
+/* ---------- layout ---------- */
+main { max-width: 1240px; margin: 0 auto; padding: 20px 16px 96px; }
+.page-h { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin: 4px 0 16px; }
+.page-h h1 { font-size: 22px; line-height: 1.25; margin: 0; font-weight: 700; }
+.page-h .sub { color: var(--muted); font-size: 14px; }
+.grid { display: grid; gap: 14px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.g5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.span2 { grid-column: span 2; }
+@media (max-width: 900px) { .g3, .g4, .g5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .g2 { grid-template-columns: 1fr; } .span2 { grid-column: auto; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 16px; min-width: 0; }
+.card h2 { font-size: 15px; margin: 0 0 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.card h2 .spacer { flex: 1; }
+.card + .card { margin-top: 14px; }
+.grid > .card + .card { margin-top: 0; }
+.stack > * + * { margin-top: 14px; }
+
+/* ---------- stat tiles ---------- */
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; box-shadow: var(--shadow); text-align: left; width: 100%; }
+button.tile { cursor: pointer; transition: border-color .15s, transform .15s; }
+button.tile:hover { border-color: var(--accent); transform: translateY(-1px); }
+.tile .k { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.tile .v { font: 600 28px/1.15 var(--mono); margin-top: 4px; }
+.tile .s { font-size: 12.5px; color: var(--faint); margin-top: 2px; }
+.tile.bad .v { color: var(--bad); } .tile.warn .v { color: var(--warn); } .tile.ok .v { color: var(--ok); }
+
+/* ---------- badges / chips ---------- */
+.badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); white-space: nowrap; }
+.badge.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+.badge.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+.badge.bad { background: var(--bad-soft); color: var(--bad); border-color: transparent; }
+.badge.info { background: var(--info-soft); color: var(--info); border-color: transparent; }
+.badge.acc { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.dot.green { background: var(--ok); } .dot.amber { background: var(--warn); } .dot.red { background: var(--bad); }
+
+/* ---------- buttons ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line-2); background: var(--surface); padding: 7px 14px; border-radius: var(--r-sm); font-weight: 600; font-size: 14px; cursor: pointer; text-decoration: none; color: var(--text); white-space: nowrap; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.pri:hover { filter: brightness(1.08); color: var(--accent-ink); }
+.btn.ok { color: var(--ok); } .btn.ok:hover { border-color: var(--ok); }
+.btn.bad { color: var(--bad); } .btn.bad:hover { border-color: var(--bad); }
+.btn.sm { padding: 4px 10px; font-size: 13px; }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn:disabled { opacity: .55; cursor: default; }
+.row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* ---------- tables ---------- */
+.tbl-wrap { overflow-x: auto; margin: 0 -16px -16px; border-top: 1px solid var(--line); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); font-weight: 600; padding: 9px 12px; background: var(--surface-2); border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+tr.click { cursor: pointer; }
+tr.click:hover td { background: var(--surface-2); }
+td.name { font-weight: 600; min-width: 200px; }
+td.name .small { font-weight: 400; }
+.empty { padding: 28px 12px; text-align: center; color: var(--faint); }
+
+/* ---------- toolbar / inputs ---------- */
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.input, select.input, textarea.input { background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-sm); padding: 8px 11px; min-width: 0; }
+.input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.search { flex: 1 1 220px; max-width: 360px; }
+label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
+
+/* ---------- progress ---------- */
+.bar { height: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.bar.thin { height: 6px; min-width: 70px; }
+.ring { position: relative; width: 112px; height: 112px; flex: none; }
+.ring svg { transform: rotate(-90deg); }
+.ring .lbl { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring .lbl b { font: 600 22px var(--mono); }
+.ring .lbl span { font-size: 11px; color: var(--muted); }
+
+/* ---------- lists ---------- */
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.list li:first-child { padding-top: 0; }
+.list .main { flex: 1; min-width: 0; }
+.list .t { font-weight: 600; }
+.list .d { font-size: 13px; color: var(--muted); }
+.kv { display: grid; grid-template-columns: 170px 1fr; gap: 8px 16px; font-size: 14px; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; word-break: break-word; }
+@media (max-width: 560px) { .kv { grid-template-columns: 1fr; gap: 2px; } .kv dd { margin-bottom: 8px; } }
+
+/* timeline */
+.tl { list-style: none; margin: 0; padding: 0 0 0 18px; border-left: 2px solid var(--line); }
+.tl li { position: relative; padding: 0 0 18px 14px; }
+.tl li:last-child { padding-bottom: 0; }
+.tl li::before { content: ''; position: absolute; left: -26px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--line-2); }
+.tl li.now::before { border-color: var(--accent); background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+.tl li.done::before { border-color: var(--ok); background: var(--ok); }
+.tl .head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tl .place { font-weight: 600; }
+
+/* hero */
+.hero { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font: 600 20px var(--mono); flex: none; }
+.hero h1 { font-size: 20px; margin: 0; line-height: 1.25; }
+.hero .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+
+/* bars chart */
+.hbars { display: grid; gap: 7px; }
+.hbar { display: grid; grid-template-columns: 120px 1fr 34px; gap: 10px; align-items: center; font-size: 13px; background: none; border: 0; padding: 2px 0; text-align: left; cursor: pointer; color: var(--text); }
+.hbar:hover .n { color: var(--accent); }
+.hbar .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.hbar .track { height: 10px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+.hbar .track i { display: block; height: 100%; background: var(--accent); border-radius: 99px; opacity: .85; }
+.hbar .n { font: 600 13px var(--mono); text-align: right; }
+
+/* planner */
+.plan { border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+.plan th, .plan td { padding: 0; border-bottom: 1px solid var(--line); }
+.plan th { padding: 8px 4px; text-align: center; text-transform: none; letter-spacing: 0; font-size: 12px; }
+.plan th.cur { color: var(--accent); }
+.plan td.nm { padding: 6px 12px; white-space: nowrap; font-weight: 600; position: sticky; left: 0; background: var(--surface); z-index: 1; max-width: 240px; overflow: hidden; text-overflow: ellipsis; border-right: 1px solid var(--line); }
+.plan td.c { min-width: 64px; height: 34px; padding: 3px 2px; }
+.plan td.cur { background: var(--accent-soft); }
+.plan .pl { display: block; height: 100%; border-radius: 5px; font-size: 11px; font-weight: 600; padding: 6px 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
+.legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+/* attention */
+.attn li .dot { margin-top: 6px; }
+
+/* ---------- modal ---------- */
+.scrim { position: fixed; inset: 0; background: rgba(10, 18, 26, .45); z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 6vh 14px 14px; overflow-y: auto; }
+.modal { background: var(--surface); border-radius: 14px; width: 100%; max-width: 560px; box-shadow: 0 20px 60px rgba(0, 0, 0, .3); border: 1px solid var(--line); }
+.modal.wide { max-width: 860px; }
+.modal-h { display: flex; align-items: center; gap: 10px; padding: 16px 18px 10px; }
+.modal-h h3 { margin: 0; font-size: 17px; flex: 1; }
+.modal-b { padding: 4px 18px 8px; }
+.modal-f { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px 16px; border-top: 1px solid var(--line); margin-top: 8px; }
+.form { display: grid; gap: 12px; grid-template-columns: 1fr; }
+.modal.wide .form { grid-template-columns: 1fr 1fr; }
+.modal.wide .form .full { grid-column: 1 / -1; }
+@media (max-width: 640px) { .modal.wide .form { grid-template-columns: 1fr; } }
+.field { display: grid; gap: 4px; }
+.field > span { font-size: 13px; font-weight: 600; color: var(--muted); }
+.field .hint { font-size: 12px; color: var(--faint); }
+.field .input { width: 100%; }
+.field textarea { min-height: 78px; resize: vertical; }
+.preview { background: var(--accent-soft); color: var(--accent); border-radius: var(--r-sm); padding: 9px 12px; font-weight: 600; font-size: 14px; }
+.err { background: var(--bad-soft); color: var(--bad); border-radius: var(--r-sm); padding: 9px 12px; font-size: 14px; }
+
+/* ---------- toast ---------- */
+#toasts { position: fixed; z-index: 60; left: 50%; bottom: 20px; transform: translateX(-50%); display: grid; gap: 8px; width: min(440px, calc(100% - 24px)); }
+.toast { background: var(--text); color: var(--bg); padding: 11px 14px; border-radius: 10px; font-size: 14px; box-shadow: 0 8px 24px rgba(0, 0, 0, .25); animation: up .2s ease-out; }
+.toast.bad { background: var(--bad); color: #fff; }
+.toast.ok { background: var(--ok); color: #fff; }
+@keyframes up { from { transform: translateY(8px); opacity: 0; } }
+
+/* ---------- login ---------- */
+.login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 14px; }
+.login .box { width: 100%; max-width: 420px; }
+.login .head { text-align: center; margin-bottom: 18px; }
+.login .head .pulse { width: 120px; height: 40px; margin: 0 auto 8px; display: block; }
+.login .head .dept { font-size: 13px; color: var(--muted); }
+.login .head h1 { font-size: 21px; margin: 4px 0 0; line-height: 1.3; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 3px; margin-bottom: 16px; }
+.seg button { border: 0; background: none; padding: 8px; border-radius: 8px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.seg button.on { background: var(--surface); color: var(--accent); box-shadow: var(--shadow); }
+.login .card .form { gap: 14px; }
+.login .note { font-size: 12.5px; color: var(--faint); text-align: center; margin-top: 14px; }
+
+/* skeleton */
+.skel { background: linear-gradient(90deg, var(--surface-2), var(--line), var(--surface-2)); background-size: 200% 100%; animation: sk 1.2s infinite; border-radius: 8px; height: 90px; }
+@keyframes sk { to { background-position: -200% 0; } }
+
+/* phones: student bottom nav */
+@media (max-width: 720px) {
+  .who { display: none; }
+  .brand .sub { display: none; }
+  body[data-role="Student"] .nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); justify-content: space-around; padding: 4px 4px calc(4px + env(safe-area-inset-bottom)); z-index: 30; }
+  body[data-role="Student"] .nav a { flex-direction: column; gap: 2px; font-size: 11px; padding: 6px 4px; }
+  body[data-role="Student"] .nav a.on::after { display: none; }
+  body[data-role="Student"] .nav a svg { width: 22px; height: 22px; }
+  main { padding: 14px 12px 96px; }
+  body[data-role="Student"] #toasts { bottom: 84px; }
+  .page-h h1 { font-size: 19px; }
+  .tile .v { font-size: 24px; }
+}
+.nav a svg { width: 17px; height: 17px; flex: none; }
+@media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } .pulse path { stroke-dashoffset: 0; } }
+@media print { .top, .toolbar, .btn, #toasts { display: none !important; } main { padding: 0; } .card { box-shadow: none; } }
+</style>
+</head>
+<body>
+
+<div id="login" class="login hidden">
+  <div class="box">
+    <div class="head">
+      <svg class="pulse" viewBox="0 0 120 40" aria-hidden="true"><path d="M2 22 H34 L40 22 L45 8 L52 34 L58 16 L62 22 H118"/></svg>
+      <div class="dept" id="lDept">Emergency &amp; Trauma Department · Hospital Kuala Lumpur</div>
+      <h1 id="lTitle">HKL Postgraduate Monitoring System</h1>
+    </div>
+    <div class="card">
+      <div class="seg" role="tablist">
+        <button type="button" data-role="Student" class="on">Student</button>
+        <button type="button" data-role="Supervisor">Supervisor</button>
+        <button type="button" data-role="Admin">Admin</button>
+      </div>
+      <form id="lForm" class="form" autocomplete="on">
+        <label class="field" id="lNameF"><span>Your name</span>
+          <input class="input" id="lName" list="lNames" autocomplete="off" placeholder="Loading names…" required></label>
+        <datalist id="lNames"></datalist>
+        <label class="field"><span id="lSecretL">Registered email</span>
+          <input class="input" id="lSecret" type="email" required></label>
+        <div id="lHint" class="hint small muted"></div>
+        <div id="lErr" class="err hidden" role="alert"></div>
+        <button class="btn pri" id="lBtn" type="submit">Sign in</button>
+      </form>
+    </div>
+    <div class="note">Your session ends when you close this tab or press Log out.</div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="top">
+    <div class="top-in">
+      <div class="brand">
+        <svg class="pulse" viewBox="0 0 64 24" aria-hidden="true"><path d="M1 13 H18 L21 13 L24 4 L28 20 L31 9 L33 13 H63"/></svg>
+        <div><b>HKL-PoMS</b><div class="sub" id="hSub"></div></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="sync" id="sync" title="Saving status"><i></i><span>Up to date</span></div>
+      <div class="who"><b id="hName"></b><span id="hRole" class="muted"></span></div>
+      <button class="btn sm" id="hOut" type="button">Log out</button>
+    </div>
+    <nav class="nav" id="nav" aria-label="Sections"></nav>
+  </header>
+  <main id="view" tabindex="-1"></main>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* ======================================================================= API */
+
+var SNAP_KEY = 'poms.snap', TOKEN_KEY = 'poms.token';
+
+function api(fn) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return fetch(API_URL, {
+    method: 'POST', credentials: 'omit', cache: 'no-store', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ fn: fn, args: args })
+  }).then(function (r) { return r.text(); }).then(function (txt) {
+    var j; try { j = JSON.parse(txt); } catch (e) { throw new Error('The server did not answer properly. Please try again.'); }
+    if (j.ok) return j.value;
+    if (j.error === 'SESSION_EXPIRED') { expire(); throw new Error('Your session has ended. Please sign in again.'); }
+    throw new Error(j.error || 'Request failed.');
+  }, function () { throw new Error('No connection to the server. Check your internet and try again.'); });
+}
+
+/* ===================================================================== STATE */
+
+var S = { token: null, me: null, d: null, route: '', loadedAt: 0, ui: { f: {}, sf: {}, q: '', sq: '' }, busy: 0 };
+var TABLE_KEY = { Students: 'students', Supervisors: 'supervisors', Admins: 'admins', Postings: 'postings',
+                  Leaves: 'leaves', Milestones: 'milestones', Holidays: 'holidays' };
+
+function saveSnap() {
+  try { sessionStorage.setItem(TOKEN_KEY, S.token); sessionStorage.setItem(SNAP_KEY, JSON.stringify(S.d)); } catch (e) {}
+}
+function clearSnap() { try { sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(SNAP_KEY); } catch (e) {} }
+
+function setData(d) {
+  S.d = d; S.me = d.me; S.loadedAt = Date.now();
+  index();
+  saveSnap();
+}
+
+/** Lookup maps rebuilt after every change. */
+var IX = {};
+function index() {
+  var d = S.d;
+  ['students', 'supervisors', 'postings', 'leaves', 'milestones', 'holidays', 'admins'].forEach(function (k) { d[k] = d[k] || []; });
+  IX.stu = {}; d.students.forEach(function (s) { IX.stu[s.id] = s; });
+  IX.sup = {}; d.supervisors.forEach(function (s) { IX.sup[s.id] = s; });
+  IX.by = { postings: {}, leaves: {}, milestones: {} };
+  ['postings', 'leaves', 'milestones'].forEach(function (k) {
+    d[k].forEach(function (r) { (IX.by[k][r.studentId] = IX.by[k][r.studentId] || []).push(r); });
+  });
+  IX.off = {}; d.holidays.forEach(function (h) { IX.off[h.date] = h.name; });
+}
+function of(kind, sid) { return IX.by[kind][sid] || []; }
+
+function merge(res) {
+  var d = S.d;
+  Object.keys(res.changed || {}).forEach(function (t) {
+    var k = TABLE_KEY[t]; if (!k) return;
+    d[k] = (d[k] || []).filter(function (r) { return String(r.id).indexOf('tmp-') !== 0; });
+    res.changed[t].forEach(function (row) {
+      var i = d[k].findIndex(function (r) { return r.id === row.id; });
+      if (i > -1) d[k][i] = row; else d[k].push(row);
+    });
+  });
+  Object.keys(res.removed || {}).forEach(function (t) {
+    var k = TABLE_KEY[t]; if (!k) return;
+    d[k] = d[k].filter(function (r) { return res.removed[t].indexOf(r.id) < 0; });
+  });
+  if (res.settings) d.settings = res.settings;
+  index();
+  saveSnap();
+}
+
+/** Save with instant feedback: change the screen first, roll back if the server says no. */
+function run(action, payload, opt) {
+  opt = opt || {};
+  var before = JSON.stringify(S.d);
+  if (opt.optimistic) { opt.optimistic(S.d); index(); render(); }
+  busy(1);
+  return api('act', S.token, action, payload).then(function (res) {
+    merge(res); render();
+    if (opt.done) toast(opt.done, 'ok');
+    return res;
+  }, function (e) {
+    S.d = JSON.parse(before); index(); render();
+    toast(e.message, 'bad');
+    throw e;
+  }).finally(function () { busy(-1); });
+}
+
+function busy(n) {
+  S.busy = Math.max(0, S.busy + n);
+  var el = document.getElementById('sync');
+  el.className = 'sync' + (S.busy ? ' busy' : '');
+  el.querySelector('span').textContent = S.busy ? 'Saving…' : 'Up to date';
+}
+
+/* ===================================================================== UTILS */
+
+var $ = function (id) { return document.getElementById(id); };
+function esc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function set_() { return S.d.settings || {}; }
+function list(s) { return String(s || '').split('|').map(function (x) { return x.trim(); }).filter(Boolean); }
+function num(k, dflt) { var n = +set_()[k]; return isNaN(n) || set_()[k] === '' ? dflt : n; }
+function today() {
+  var d = new Date(Date.now() + 8 * 3600e3); return d.toISOString().slice(0, 10);   // Malaysia date
+}
+function toD(iso) { var p = iso.split('-'); return Date.UTC(+p[0], +p[1] - 1, +p[2]); }
+function daysBetween(a, b) { return Math.round((toD(b) - toD(a)) / 864e5); }
+function addDays(iso, n) { return new Date(toD(iso) + n * 864e5).toISOString().slice(0, 10); }
+var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function fd(iso) {
+  if (!iso) return '—';
+  var p = String(iso).slice(0, 10).split('-'); if (p.length < 3) return esc(iso);
+  return (+p[2]) + ' ' + MON[+p[1] - 1] + ' ' + p[0];
+}
+function range(a, b) { return a || b ? fd(a) + ' – ' + fd(b) : '<span class="faint">No dates</span>'; }
+function ago(ts) {
+  if (!ts) return '';
+  var d = daysBetween(String(ts).slice(0, 10), today());
+  return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago';
+}
+function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+function initials(name) {
+  return String(name || '?').replace(/\b(DR|DATUK|PROF|BIN|BINTI|BT|A\/L|A\/P)\b/gi, ' ').trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase();
+}
+function title(s) { return String(s || '').toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
+function workingDays(start, end, half) {
+  if (!start || !end || end < start) return 0;
+  var n = 0, d = start;
+  while (d <= end) { var w = new Date(toD(d)).getUTCDay(); if (w && w !== 6 && !IX.off[d]) n++; d = addDays(d, 1); }
+  return half && start === end && n === 1 ? 0.5 : n;
+}
+function supName(id) { var s = IX.sup[id]; return s ? s.name : ''; }
+function stuName(id) { var s = IX.stu[id]; return s ? s.name : id; }
+function yearLabel(s) { return s.stage ? title(s.stage) : s.year ? 'Year ' + s.year : '—'; }
+function svgIcon(name) {
+  var p = {
+    home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+    map: 'M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14',
+    cal: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4',
+    book: 'M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2zM8 7h7',
+    user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+    users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3',
+    check: 'M4 12l5 5L20 6',
+    grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+    chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+    gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
+    log: 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h4',
+    id: 'M3 5h18v14H3zM8 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5 16a3 3 0 0 1 6 0M14 9h4M14 13h4'
+  }[name] || '';
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + p + '"/></svg>';
+}
+
+/* ================================================================== DERIVED */
+
+function timing(p) {
+  var t = today();
+  if (!p.startDate && !p.endDate) return { key: 'none', label: 'No dates', cls: '' };
+  if (p.endDate && p.endDate < t) return { key: 'done', label: 'Completed', cls: 'ok' };
+  if (p.startDate && p.startDate > t) return { key: 'next', label: 'Upcoming', cls: 'info' };
+  return { key: 'now', label: 'Current', cls: 'acc' };
+}
+function postingsOf(sid) {
+  return of('postings', sid).slice().sort(function (a, b) {
+    return (a.startDate || '9999').localeCompare(b.startDate || '9999') || (+a.round || 0) - (+b.round || 0);
+  });
+}
+function currentPosting(sid) {
+  return postingsOf(sid).filter(function (p) { return p.status === 'Approved' && timing(p).key === 'now'; }).pop() || null;
+}
+function nextPosting(sid) {
+  return postingsOf(sid).filter(function (p) { return p.status === 'Approved' && timing(p).key === 'next'; })[0] || null;
+}
+function thesis(sid) {
+  var ms = of('milestones', sid).slice().sort(function (a, b) { return (+a.order || 0) - (+b.order || 0); });
+  var done = ms.filter(function (m) { return m.status === 'Verified'; }).length;
+  return { ms: ms, done: done, total: ms.length, pct: ms.length ? Math.round(done * 100 / ms.length) : 0 };
+}
+function leaveSum(sid) {
+  var st = IX.stu[sid] || {}, yr = today().slice(0, 4);
+  var out = { annual: { ent: +st.leaveEntitlement || num('ANNUAL_LEAVE_ENTITLEMENT', 30), used: 0, pending: 0 },
+              emergency: { ent: num('EMERGENCY_LEAVE_ENTITLEMENT', 7), used: 0, pending: 0 }, otherUsed: 0 };
+  of('leaves', sid).forEach(function (l) {
+    if (String(l.startDate).slice(0, 4) !== yr) return;
+    var b = l.type === 'Annual' ? out.annual : l.type === 'Emergency' ? out.emergency : null;
+    var d = +l.days || 0;
+    if (l.status === 'Approved') { if (b) b.used += d; else out.otherUsed += d; }
+    if (l.status === 'Pending' && b) b.pending += d;
+  });
+  out.annual.left = out.annual.ent - out.annual.used;
+  out.emergency.left = out.emergency.ent - out.emergency.used;
+  return out;
+}
+function pendingFor(sid) {
+  var leaves = of('leaves', sid).filter(function (l) { return l.status === 'Pending'; });
+  var ms = of('milestones', sid).filter(function (m) { return m.status === 'Submitted'; });
+  var ext = of('postings', sid).filter(function (p) { return p.status === 'Pending'; });
+  return { leaves: leaves, ms: ms, ext: ext, n: leaves.length + ms.length + ext.length };
+}
+/** Red / amber / green with plain reasons. */
+function risk(sid) {
+  var st = IX.stu[sid] || {}, t = today(), why = [], lvl = 0;
+  var bump = function (l, msg) { lvl = Math.max(lvl, l); why.push({ l: l, msg: msg }); };
+  var th = thesis(sid);
+  var overdue = th.ms.filter(function (m) { return m.targetDate && m.targetDate < t && m.status !== 'Verified'; });
+  if (overdue.length) bump(2, plural(overdue.length, 'milestone') + ' past target date');
+  if (st.endDate && st.endDate < t && !st.archived) bump(2, 'Study end date (' + fd(st.endDate) + ') has passed');
+  var rev = th.ms.filter(function (m) { return m.status === 'Needs revision'; });
+  if (rev.length) bump(1, plural(rev.length, 'milestone') + ' need revision');
+  var wait = num('REMINDER_DAYS', 3);
+  var p = pendingFor(sid);
+  p.leaves.concat(p.ms).forEach(function (x) {
+    var age = x.submittedAt ? daysBetween(String(x.submittedAt).slice(0, 10), t) : 0;
+    if (age > wait) bump(1, (x.type ? 'Leave' : 'Milestone "' + x.name + '"') + ' waiting ' + age + ' days for a decision');
+  });
+  var cp = currentPosting(sid);
+  if (cp && cp.endDate) {
+    var left = daysBetween(t, cp.endDate);
+    if (left <= num('POSTING_ENDING_SOON_DAYS', 60)) bump(1, 'Current posting (' + cp.place + ') ends in ' + plural(left, 'day'));
+  }
+  if (th.total && th.done < th.total) {
+    var last = th.ms.map(function (m) { return String(m.updatedAt || '').slice(0, 10); }).sort().pop();
+    var stale = num('DISSERTATION_STALE_DAYS', 90);
+    if (last && daysBetween(last, t) > stale) bump(1, 'No dissertation update in ' + daysBetween(last, t) + ' days');
+  }
+  return { level: ['green', 'amber', 'red'][lvl], why: why };
+}
+function statusBadge(s) {
+  var cls = { 'Approved': 'ok', 'Verified': 'ok', 'Pending': 'warn', 'Submitted': 'warn', 'In progress': 'info',
+              'Rejected': 'bad', 'Needs revision': 'bad', 'Cancelled': '', 'Not started': '',
+              'ACTIVE': 'ok', 'IN CAMPUS': 'ok', 'ROTATION': 'info', 'ATTACHMENT': 'info', 'ON LEAVE': 'warn',
+              'COMPLETED': 'ok', 'WITHDRAWN': 'bad' }[s];
+  return '<span class="badge ' + (cls || '') + '">' + esc(s || '—') + '</span>';
+}
+function riskDot(sid) { var r = risk(sid); return '<span class="dot ' + r.level + '" title="' + esc(r.why.map(function (w) { return w.msg; }).join('\n') || 'On track') + '"></span>'; }
+function placeColor(place) {
+  var pal = ['#0f766e', '#2c5282', '#7b2d42', '#9a5b13', '#4c6b1f', '#6b3fa0', '#1f6f8b', '#a23b72', '#5b6470', '#2f855a'];
+  var h = 0, s = String(place || '').toUpperCase(); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return pal[h % pal.length];
+}
+function ringSvg(pct, label) {
+  var r = 48, c = 2 * Math.PI * r, off = c * (1 - pct / 100);
+  return '<div class="ring"><svg width="112" height="112" viewBox="0 0 112 112"><circle cx="56" cy="56" r="' + r + '" fill="none" stroke="var(--line)" stroke-width="10"/>' +
+    '<circle cx="56" cy="56" r="' + r + '" fill="none" stroke="var(--accent)" stroke-width="10" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"/></svg>' +
+    '<div class="lbl"><b>' + pct + '%</b><span>' + esc(label) + '</span></div></div>';
+}
+function bar(pct, thin) { return '<div class="bar' + (thin ? ' thin' : '') + '"><i style="width:' + Math.max(0, Math.min(100, pct)) + '%"></i></div>'; }
+function tile(k, v, s, cls, act) {
+  var tag = act ? 'button type="button" ' + act : 'div';
+  return '<' + tag + ' class="tile ' + (cls || '') + '"><div class="k">' + esc(k) + '</div><div class="v">' + v + '</div>' + (s ? '<div class="s">' + s + '</div>' : '') + '</' + (act ? 'button' : 'div') + '>';
+}
+function empty(msg) { return '<div class="empty">' + esc(msg) + '</div>'; }
+function card(t, body, extra) { return '<section class="card"><h2>' + t + (extra ? '<span class="spacer"></span>' + extra : '') + '</h2>' + body + '</section>'; }
+
+/* ================================================================ UI KIT */
+
+function toast(msg, cls) {
+  var el = document.createElement('div');
+  el.className = 'toast ' + (cls || '');
+  el.textContent = msg;
+  $('toasts').appendChild(el);
+  setTimeout(function () { el.remove(); }, cls === 'bad' ? 6000 : 3000);
+}
+
+var MODAL = null;
+function closeModal() { $('modalRoot').innerHTML = ''; MODAL = null; }
+
+/**
+ * Generic form dialog.
+ * fields: [{ name, label, type: text|email|tel|date|number|select|textarea|checkbox|static, options, value, required, hint, full }]
+ */
+function form(o) {
+  var fields = o.fields.map(function (f) {
+    var id = 'f_' + f.name, v = f.value == null ? '' : f.value, req = f.required ? ' required' : '';
+    var input;
+    if (f.type === 'static') input = '<div>' + f.html + '</div>';
+    else if (f.type === 'select') {
+      input = '<select class="input" id="' + id + '" name="' + f.name + '"' + req + '>' + f.options.map(function (op) {
+        var val = typeof op === 'object' ? op.value : op, lab = typeof op === 'object' ? op.label : op;
+        return '<option value="' + esc(val) + '"' + (String(val) === String(v) ? ' selected' : '') + '>' + esc(lab) + '</option>';
+      }).join('') + '</select>';
+    } else if (f.type === 'textarea') input = '<textarea class="input" id="' + id + '" name="' + f.name + '"' + req + ' maxlength="' + (f.max || 1000) + '">' + esc(v) + '</textarea>';
+    else if (f.type === 'checkbox') return '<label class="chk' + (f.full ? ' full' : '') + '"><input type="checkbox" id="' + id + '" name="' + f.name + '"' + (v ? ' checked' : '') + '> ' + esc(f.label) + '</label>';
+    else input = '<input class="input" id="' + id + '" name="' + f.name + '" type="' + (f.type || 'text') + '" value="' + esc(v) + '"' + req + (f.max ? ' maxlength="' + f.max + '"' : '') + (f.step ? ' step="' + f.step + '"' : '') + '>';
+    return '<label class="field' + (f.full ? ' full' : '') + '"><span>' + esc(f.label) + (f.required ? ' *' : '') + '</span>' + input + (f.hint ? '<span class="hint">' + esc(f.hint) + '</span>' : '') + '</label>';
+  }).join('');
+  $('modalRoot').innerHTML =
+    '<div class="scrim" id="scrim"><div class="modal' + (o.wide ? ' wide' : '') + '" role="dialog" aria-modal="true" aria-labelledby="mTitle">' +
+    '<div class="modal-h"><h3 id="mTitle">' + esc(o.title) + '</h3><button class="btn ghost sm" type="button" data-close aria-label="Close">✕</button></div>' +
+    '<form id="mForm" novalidate><div class="modal-b">' + (o.intro ? '<p class="muted small" style="margin-top:0">' + o.intro + '</p>' : '') +
+    '<div class="form">' + fields + '</div><div id="mPreview" class="preview hidden" style="margin-top:12px"></div><div id="mErr" class="err hidden" style="margin-top:12px" role="alert"></div></div>' +
+    '<div class="modal-f">' + (o.extraBtn || '') + '<span class="spacer"></span><button class="btn" type="button" data-close>Cancel</button><button class="btn pri" type="submit">' + esc(o.submit || 'Save') + '</button></div></form></div></div>';
+  MODAL = o;
+  var f = $('mForm');
+  var values = function () {
+    var out = {};
+    o.fields.forEach(function (fl) {
+      var el = $('f_' + fl.name); if (!el) return;
+      out[fl.name] = fl.type === 'checkbox' ? el.checked : el.value.trim();
+    });
+    return out;
+  };
+  var upd = function () {
+    if (!o.preview) return;
+    var p = o.preview(values()), pv = $('mPreview');
+    pv.classList.toggle('hidden', !p); pv.innerHTML = p || '';
+  };
+  f.addEventListener('input', upd); f.addEventListener('change', upd); upd();
+  f.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var v = values(), miss = o.fields.filter(function (fl) { return fl.required && !v[fl.name]; });
+    var errBox = $('mErr');
+    if (miss.length) { errBox.textContent = 'Please fill in: ' + miss.map(function (m) { return m.label; }).join(', ') + '.'; errBox.classList.remove('hidden'); return; }
+    var msg = o.validate && o.validate(v);
+    if (msg) { errBox.textContent = msg; errBox.classList.remove('hidden'); return; }
+    closeModal();
+    o.onSubmit(v);
+  });
+  var first = f.querySelector('input,select,textarea'); if (first) first.focus();
+}
+function confirmBox(titleText, body, okLabel, onOk, danger) {
+  $('modalRoot').innerHTML = '<div class="scrim" id="scrim"><div class="modal" role="dialog" aria-modal="true"><div class="modal-h"><h3>' + esc(titleText) + '</h3></div>' +
+    '<div class="modal-b"><p style="margin:0">' + body + '</p></div><div class="modal-f"><button class="btn" type="button" data-close>Cancel</button>' +
+    '<button class="btn ' + (danger ? 'bad' : 'pri') + '" id="mOk" type="button">' + esc(okLabel) + '</button></div></div></div>';
+  MODAL = {};
+  $('mOk').onclick = function () { closeModal(); onOk(); };
+  $('mOk').focus();
+}
+document.addEventListener('click', function (e) {
+  if (e.target.closest('[data-close]') || e.target.id === 'scrim') closeModal();
+});
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && MODAL) closeModal(); });
+
+/* ================================================================== LOGIN */
+
+var LOGIN = { role: 'Student', opts: null };
+function showLogin(msg) {
+  document.body.removeAttribute('data-role');
+  $('app').classList.add('hidden');
+  $('login').classList.remove('hidden');
+  if (msg) { $('lErr').textContent = msg; $('lErr').classList.remove('hidden'); }
+  setLoginRole(LOGIN.role);
+  if (!LOGIN.opts) {
+    api('loginOptions').then(function (o) {
+      LOGIN.opts = o;
+      if (o.system) $('lTitle').textContent = o.system;
+      if (o.department) $('lDept').textContent = o.department;
+      setLoginRole(LOGIN.role);
+    }, function (e) { $('lName').placeholder = 'Type your full name'; $('lErr').textContent = e.message; $('lErr').classList.remove('hidden'); });
+  }
+}
+function setLoginRole(role) {
+  LOGIN.role = role;
+  document.querySelectorAll('.seg button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-role') === role); });
+  var isAdm = role === 'Admin';
+  $('lNameF').classList.toggle('hidden', isAdm);
+  $('lName').required = !isAdm;
+  var names = LOGIN.opts ? (role === 'Student' ? LOGIN.opts.students : LOGIN.opts.supervisors) : [];
+  $('lNames').innerHTML = (names || []).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
+  $('lName').placeholder = LOGIN.opts ? 'Start typing your name' : 'Loading names…';
+  var sec = $('lSecret');
+  sec.value = '';
+  if (role === 'Student') { $('lSecretL').textContent = 'Registered email'; sec.type = 'email'; sec.autocomplete = 'email'; $('lHint').textContent = 'Use the email the department has on file for you.'; }
+  if (role === 'Supervisor') { $('lSecretL').textContent = 'NSR number'; sec.type = 'password'; sec.autocomplete = 'off'; sec.inputMode = 'numeric'; $('lHint').textContent = 'Use the NSR number we hold for you. Ask the department admin if you are not sure.'; }
+  if (role === 'Admin') { $('lSecretL').textContent = 'Admin passcode'; sec.type = 'password'; sec.autocomplete = 'current-password'; sec.inputMode = 'text'; $('lHint').textContent = ''; }
+}
+document.querySelectorAll('.seg button').forEach(function (b) {
+  b.addEventListener('click', function () { $('lErr').classList.add('hidden'); setLoginRole(b.getAttribute('data-role')); });
+});
+$('lForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var btn = $('lBtn'), err = $('lErr');
+  err.classList.add('hidden');
+  var name = $('lName').value.trim(), secret = $('lSecret').value.trim();
+  if (LOGIN.role !== 'Admin') {
+    var names = LOGIN.opts ? (LOGIN.role === 'Student' ? LOGIN.opts.students : LOGIN.opts.supervisors) : null;
+    var match = names && names.filter(function (n) { return n.toUpperCase() === name.toUpperCase(); })[0];
+    if (names && !match) { err.textContent = 'Please pick your name from the suggestions as you type.'; err.classList.remove('hidden'); return; }
+    if (match) name = match;
+  }
+  if (!secret) { err.textContent = 'Please fill in ' + $('lSecretL').textContent.toLowerCase() + '.'; err.classList.remove('hidden'); return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  api('login', LOGIN.role, name, secret).then(function (r) {
+    S.token = r.token;
+    btn.textContent = 'Loading your data…';
+    return api('bootstrap', r.token);
+  }).then(function (d) {
+    setData(d); enterApp();
+  }).catch(function (x) {
+    err.textContent = x.message; err.classList.remove('hidden');
+  }).finally(function () { btn.disabled = false; btn.textContent = 'Sign in'; });
+});
+
+function expire() {
+  if (!S.token) return;
+  S.token = null; S.d = null; clearSnap(); closeModal();
+  showLogin('Your session has ended. Please sign in again.');
+}
+$('hOut').addEventListener('click', function () {
+  var t = S.token; S.token = null; S.d = null; clearSnap();
+  if (t) api('logout', t).catch(function () {});
+  location.hash = '';
+  showLogin();
+});
+
+/* ==================================================================== APP */
+
+var NAV = {
+  Student: [['home', 'Home', 'home'], ['postings', 'Postings', 'map'], ['leave', 'Leave', 'cal'], ['thesis', 'Dissertation', 'book'], ['profile', 'Profile', 'user']],
+  Supervisor: [['students', 'My students', 'users'], ['approvals', 'Approvals', 'check']],
+  Admin: [['dashboard', 'Dashboard', 'chart'], ['students', 'Students', 'users'], ['approvals', 'Approvals', 'check'], ['planner', 'Planner', 'grid'],
+          ['supervisors', 'Supervisors', 'id'], ['settings', 'Settings', 'gear'], ['audit', 'Audit log', 'log']]
+};
+
+function enterApp() {
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  document.body.setAttribute('data-role', S.me.role);
+  $('hName').textContent = S.me.name;
+  $('hRole').textContent = S.me.role;
+  $('hSub').textContent = set_().DEPARTMENT_NAME || '';
+  if (!location.hash || !routeOk(parseRoute().name)) location.hash = '#/' + NAV[S.me.role][0][0];
+  render();
+}
+function parseRoute() { var p = location.hash.replace(/^#\/?/, '').split('/'); return { name: p[0], id: decodeURIComponent(p[1] || '') }; }
+function routeOk(n) { return n === 'student' && S.me.role !== 'Student' || NAV[S.me.role].some(function (x) { return x[0] === n; }); }
+function go(r) { location.hash = '#/' + r; }
+window.addEventListener('hashchange', function () { if (S.d) { render(); window.scrollTo(0, 0); } });
+
+function approvalsCount() {
+  if (S.me.role === 'Student') return 0;
+  return S.d.students.reduce(function (n, s) {
+    var p = pendingFor(s.id);
+    return n + p.leaves.length + p.ms.length + (S.me.role === 'Admin' ? p.ext.length : 0);
+  }, 0);
+}
+
+function render() {
+  if (!S.d) return;
+  var r = parseRoute();
+  if (!routeOk(r.name)) { go(NAV[S.me.role][0][0]); return; }
+  var navOn = r.name === 'student' ? 'students' : r.name;
+  var pend = approvalsCount();
+  $('nav').innerHTML = NAV[S.me.role].map(function (n) {
+    return '<a href="#/' + n[0] + '" class="' + (n[0] === navOn ? 'on' : '') + '"' + (n[0] === navOn ? ' aria-current="page"' : '') + '>' + svgIcon(n[2]) + '<span>' + n[1] + '</span>' +
+      (n[0] === 'approvals' && pend ? '<span class="count">' + pend + '</span>' : '') + '</a>';
+  }).join('');
+  var V = VIEWS[S.me.role][r.name] || VIEWS.common[r.name];
+  var html;
+  try { html = V(r.id); } catch (e) { console.error(e); html = card('This screen could not be drawn', '<p class="muted">' + esc(e.message) + '</p>'); }
+  var main = $('view');
+  // Keep typing focus in search boxes while re-rendering.
+  var active = document.activeElement, keep = active && active.id && main.contains(active) ? { id: active.id, s: active.selectionStart } : null;
+  main.innerHTML = html;
+  if (keep && $(keep.id)) { var el = $(keep.id); el.focus(); try { el.setSelectionRange(keep.s, keep.s); } catch (e) {} }
+}
+
+/* ============================================================ STUDENT VIEWS */
+
+function myId() { return S.me.id; }
+
+var VIEWS = { Student: {}, Supervisor: {}, Admin: {}, common: {} };
+
+VIEWS.Student.home = function () {
+  var st = IX.stu[myId()], th = thesis(st.id), lv = leaveSum(st.id), cp = currentPosting(st.id), np = nextPosting(st.id), rk = risk(st.id);
+  var sup = IX.sup[st.supervisorId];
+  var post = cp ? (function () {
+    var total = Math.max(1, daysBetween(cp.startDate, cp.endDate)), gone = Math.max(0, daysBetween(cp.startDate, today()));
+    return '<div class="list"><div class="t" style="font-size:18px">' + esc(cp.place) + '</div><div class="d">' + range(cp.startDate, cp.endDate) + '</div></div>' +
+      '<div style="margin:10px 0 6px">' + bar(gone * 100 / total) + '</div><div class="small muted">' + plural(Math.max(0, daysBetween(today(), cp.endDate)), 'day') + ' left in this posting</div>';
+  })() : '<p class="muted" style="margin:0">No posting with today\'s date on record.</p>';
+  if (np) post += '<div class="small" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><span class="muted">Next:</span> <b>' + esc(np.place) + '</b> from ' + fd(np.startDate) + '</div>';
+  var p = pendingFor(st.id);
+  var attn = rk.why.map(function (w) { return '<li><span class="dot ' + (w.l === 2 ? 'red' : 'amber') + '"></span><div class="main">' + esc(w.msg) + '</div></li>'; });
+  if (p.leaves.length) attn.push('<li><span class="dot amber"></span><div class="main">' + plural(p.leaves.length, 'leave request') + ' waiting for approval</div></li>');
+  return '<div class="card hero" style="margin-bottom:14px"><div class="avatar">' + esc(initials(st.name)) + '</div><div style="flex:1;min-width:220px">' +
+    '<h1>' + esc(st.name) + '</h1><div class="muted small">' + esc([st.program, st.university, yearLabel(st)].filter(Boolean).join(' · ')) + '</div>' +
+    '<div class="meta">' + statusBadge(st.status) + (st.dept ? '<span class="badge">' + esc(st.dept) + '</span>' : '') + '</div></div>' +
+    '<div class="small"><div class="muted">EDHKL supervisor</div><b>' + esc(sup ? sup.name : 'Not assigned') + '</b></div></div>' +
+    '<div class="grid g4" style="margin-bottom:14px">' +
+      tile('Annual leave left', lv.annual.left, lv.annual.used + ' used' + (lv.annual.pending ? ' · ' + lv.annual.pending + ' pending' : '') + ' of ' + lv.annual.ent, lv.annual.left < 5 ? 'warn' : '', 'data-go="leave"') +
+      tile('Emergency leave left', lv.emergency.left, lv.emergency.used + ' used of ' + lv.emergency.ent, '', 'data-go="leave"') +
+      tile('Milestones verified', th.done + '<span class="faint" style="font-size:18px">/' + th.total + '</span>', th.pct + '% of dissertation', '', 'data-go="thesis"') +
+      tile('Study ends', '<span style="font-size:20px">' + fd(st.endDate) + '</span>', !st.endDate ? '' : st.endDate < today() ? 'ended ' + plural(daysBetween(st.endDate, today()), 'day') + ' ago' : plural(daysBetween(today(), st.endDate), 'day') + ' to go', st.endDate && st.endDate < today() ? 'bad' : '', 'data-go="profile"') +
+    '</div><div class="grid g2">' +
+      card('Current posting', post, '<a class="btn sm" href="#/postings">All postings</a>') +
+      card('Needs attention', attn.length ? '<ul class="list attn">' + attn.join('') + '</ul>' : '<p class="muted" style="margin:0">Nothing needs your attention. You are on track.</p>') +
+    '</div>';
+};
+
+VIEWS.Student.postings = function () {
+  var sid = myId();
+  return '<div class="page-h"><div><h1>Postings</h1><div class="sub">Penempatan and Perlanjutan</div></div><span class="spacer"></span>' +
+    '<button class="btn pri" data-act="extReq">Request extension</button></div>' +
+    card('Your rotation timeline', timeline(sid, false));
+};
+
+function timeline(sid, admin) {
+  var ps = postingsOf(sid);
+  if (!ps.length) return empty('No postings on record yet.');
+  return '<ul class="tl">' + ps.map(function (p) {
+    var tm = timing(p);
+    return '<li class="' + (tm.key === 'now' ? 'now' : tm.key === 'done' ? 'done' : '') + '"><div class="head"><span class="place">' + esc(p.place) + '</span>' +
+      '<span class="badge ' + tm.cls + '">' + tm.label + '</span>' + (p.type === 'Extension' ? '<span class="badge warn">Perlanjutan</span>' : '') +
+      (p.status !== 'Approved' ? statusBadge(p.status) : '') + (p.round ? '<span class="faint small mono">R' + esc(p.round) + '</span>' : '') +
+      (admin ? '<span class="spacer"></span><span class="row-actions">' +
+        (p.status === 'Pending' ? '<button class="btn sm ok" data-act="extDecide" data-id="' + esc(p.id) + '" data-v="approve">Approve</button><button class="btn sm bad" data-act="extDecide" data-id="' + esc(p.id) + '" data-v="reject">Reject</button>' : '') +
+        '<button class="btn sm" data-act="postEdit" data-id="' + esc(p.id) + '">Edit</button></span>' : '') + '</div>' +
+      '<div class="small muted">' + range(p.startDate, p.endDate) + (p.startDate && p.endDate ? ' · ' + Math.round(daysBetween(p.startDate, p.endDate) / 30.4) + ' months' : '') + '</div>' +
+      (p.reason ? '<div class="small">Reason: ' + esc(p.reason) + '</div>' : '') + (p.note ? '<div class="small faint">' + esc(p.note) + '</div>' : '') + '</li>';
+  }).join('') + '</ul>';
+}
+
+VIEWS.Student.leave = function () {
+  var sid = myId(), lv = leaveSum(sid);
+  var rows = of('leaves', sid).slice().sort(function (a, b) { return b.startDate.localeCompare(a.startDate); });
+  return '<div class="page-h"><div><h1>Leave</h1><div class="sub">' + today().slice(0, 4) + ' balance and requests</div></div><span class="spacer"></span>' +
+    '<button class="btn pri" data-act="leaveNew">Apply for leave</button></div>' +
+    '<div class="grid g4" style="margin-bottom:14px">' +
+      tile('Annual left', lv.annual.left, 'of ' + lv.annual.ent + ' days', lv.annual.left < 5 ? 'warn' : '') +
+      tile('Annual used', lv.annual.used, lv.annual.pending ? lv.annual.pending + ' days pending' : 'approved days') +
+      tile('Emergency left', lv.emergency.left, 'of ' + lv.emergency.ent + ' days') +
+      tile('Other leave used', lv.otherUsed, 'MC, study, other') +
+    '</div>' + card('Requests', leaveTable(rows, 'student'));
+};
+
+function leaveTable(rows, mode) {
+  if (!rows.length) return empty('No leave requests yet.');
+  var t = today();
+  return '<div class="tbl-wrap"><table><thead><tr>' + (mode !== 'student' ? '' : '') + '<th>Dates</th><th>Type</th><th>Days</th><th>Status</th><th>Reason / note</th><th></th></tr></thead><tbody>' +
+    rows.map(function (l) {
+      var acts = '';
+      if (mode === 'student' && (l.status === 'Pending' || (l.status === 'Approved' && l.startDate > t))) acts = '<button class="btn sm" data-act="leaveCancel" data-id="' + esc(l.id) + '">Cancel</button>';
+      if (mode !== 'student' && l.status === 'Pending') acts = '<button class="btn sm ok" data-act="leaveDecide" data-id="' + esc(l.id) + '" data-v="approve">Approve</button><button class="btn sm bad" data-act="leaveDecide" data-id="' + esc(l.id) + '" data-v="reject">Reject</button>';
+      if (mode === 'admin') acts += '<button class="btn sm" data-act="leaveEdit" data-id="' + esc(l.id) + '">Edit</button>';
+      return '<tr><td class="nowrap">' + (l.startDate === l.endDate ? fd(l.startDate) : fd(l.startDate) + ' – ' + fd(l.endDate)) + '</td><td>' + esc(l.type) + '</td><td class="mono">' + esc(l.days) + (l.halfDay ? ' <span class="faint small">½</span>' : '') + '</td>' +
+        '<td>' + statusBadge(l.status) + (l.decidedBy ? '<div class="small faint">' + esc(l.decidedBy) + '</div>' : '') + '</td><td class="small">' + esc(l.reason || '') +
+        (l.decisionNote ? '<div class="faint">Note: ' + esc(l.decisionNote) + '</div>' : '') + '</td><td><div class="row-actions">' + acts + '</div></td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+
+VIEWS.Student.thesis = function () {
+  var th = thesis(myId());
+  return '<div class="page-h"><div><h1>Dissertation</h1><div class="sub">Update your progress; your supervisor verifies each milestone.</div></div></div>' +
+    '<div class="grid g3" style="align-items:start">' +
+      '<section class="card" style="display:flex;gap:18px;align-items:center">' + ringSvg(th.pct, 'verified') +
+        '<div><div class="t" style="font-weight:600">' + th.done + ' of ' + th.total + ' verified</div><div class="small muted">' +
+        th.ms.filter(function (m) { return m.status === 'Submitted'; }).length + ' waiting for supervisor<br>' +
+        th.ms.filter(function (m) { return m.status === 'In progress'; }).length + ' in progress</div></div></section>' +
+      '<div class="span2">' + card('Milestones', milestoneList(th.ms, 'student')) + '</div></div>';
+};
+
+function milestoneList(ms, mode) {
+  if (!ms.length) return empty('No milestones yet.' + (mode === 'admin' ? ' Use "Add template milestones".' : ''));
+  var t = today();
+  return '<ul class="list">' + ms.map(function (m) {
+    var late = m.targetDate && m.targetDate < t && m.status !== 'Verified';
+    var acts = '';
+    if (mode === 'student' && m.status !== 'Verified') acts = '<button class="btn sm" data-act="msUpdate" data-id="' + esc(m.id) + '">Update</button>';
+    if (mode !== 'student' && m.status === 'Submitted') acts = '<button class="btn sm ok" data-act="msDecide" data-id="' + esc(m.id) + '" data-v="verify">Verify</button><button class="btn sm bad" data-act="msDecide" data-id="' + esc(m.id) + '" data-v="revise">Send back</button>';
+    if (mode === 'supervisor') acts += '<button class="btn sm" data-act="msTarget" data-id="' + esc(m.id) + '">Target date</button>';
+    if (mode === 'admin') acts += '<button class="btn sm" data-act="msEdit" data-id="' + esc(m.id) + '">Edit</button>';
+    return '<li><span class="mono faint" style="width:22px;padding-top:2px">' + esc(m.order) + '</span><div class="main"><div class="t">' + esc(m.name) + '</div>' +
+      '<div class="d">' + statusBadge(m.status) + ' &nbsp;' + (m.targetDate ? '<span class="' + (late ? 'badge bad' : '') + '">Target ' + fd(m.targetDate) + (late ? ' · late' : '') + '</span>' : '<span class="faint">No target date</span>') + '</div>' +
+      (m.note ? '<div class="small" style="margin-top:4px">' + esc(m.note) + '</div>' : '') +
+      (m.supervisorNote ? '<div class="small" style="margin-top:4px;color:var(--info)">Supervisor: ' + esc(m.supervisorNote) + '</div>' : '') +
+      (m.verifiedBy ? '<div class="small faint">Verified by ' + esc(m.verifiedBy) + ' · ' + fd(String(m.verifiedAt).slice(0, 10)) + '</div>' : '') +
+      '</div><div class="row-actions">' + acts + '</div></li>';
+  }).join('') + '</ul>';
+}
+
+VIEWS.Student.profile = function () {
+  var st = IX.stu[myId()], sup = IX.sup[st.supervisorId];
+  return '<div class="page-h"><div><h1>Profile</h1><div class="sub">Tell the admin if anything here is wrong.</div></div><span class="spacer"></span><button class="btn pri" data-act="profileEdit">Edit contact details</button></div>' +
+    '<div class="grid g2">' + card('Training', kv([
+      ['Programme', st.program], ['University', st.university], ['Year / stage', yearLabel(st)], ['Status', st.status], ['Department now', st.dept + (st.deptPeriod && st.deptPeriod !== 'NOW' ? ' (' + st.deptPeriod + ')' : '')],
+      ['EDHKL supervisor', sup ? sup.name : ''], ['University supervisor', st.uniSupervisor], ['Reported to department', fd(st.reportDate)], ['Ends in department', fd(st.endDate)], ['File no.', st.fileNo]
+    ])) + card('Personal and contact', kv([
+      ['Name', st.name], ['MMC', st.mmc], ['Position', [st.position, st.grade].filter(Boolean).join(' · ')], ['Phone', st.phone], ['Email', st.email], ['Address', st.address], ['First degree', st.degree]
+    ])) + '</div>';
+};
+function kv(pairs) {
+  return '<dl class="kv">' + pairs.map(function (p) { var v = p[1]; return '<dt>' + esc(p[0]) + '</dt><dd>' + (v && v !== '—' ? esc(v) : '<span class="faint">—</span>') + '</dd>'; }).join('') + '</dl>';
+}
+
+/* ========================================================= SUPERVISOR VIEWS */
+
+VIEWS.Supervisor.students = function () {
+  var rows = S.d.students.slice(), q = S.ui.sq.toLowerCase();
+  var reds = rows.filter(function (s) { return risk(s.id).level === 'red'; }).length;
+  if (q) rows = rows.filter(function (s) { return (s.name + ' ' + s.university + ' ' + s.dept).toLowerCase().indexOf(q) > -1; });
+  rows.sort(function (a, b) { return ['red', 'amber', 'green'].indexOf(risk(a.id).level) - ['red', 'amber', 'green'].indexOf(risk(b.id).level) || a.name.localeCompare(b.name); });
+  return '<div class="page-h"><div><h1>My students</h1><div class="sub">' + esc(S.me.name) + '</div></div></div>' +
+    '<div class="grid g3" style="margin-bottom:14px">' + tile('Students', S.d.students.length) + tile('Waiting for you', approvalsCount(), 'leave and milestones', approvalsCount() ? 'warn' : '', 'data-go="approvals"') + tile('Need attention', reds, 'red flag', reds ? 'bad' : 'ok') + '</div>' +
+    '<div class="toolbar"><input class="input search" id="sq" placeholder="Search name, university, department" value="' + esc(S.ui.sq) + '"></div>' +
+    card('Cohort', cohortTable(rows, false));
+};
+
+function cohortTable(rows, admin) {
+  if (!rows.length) return empty('No students match.');
+  return '<div class="tbl-wrap"><table><thead><tr><th></th><th>Student</th><th>Year</th><th>University</th>' + (admin ? '<th>Status</th><th>Supervisor</th>' : '') + '<th>Current posting</th><th>Dissertation</th><th>Pending</th></tr></thead><tbody>' +
+    rows.map(function (s) {
+      var cp = currentPosting(s.id), th = thesis(s.id), p = pendingFor(s.id);
+      return '<tr class="click" data-go="student/' + esc(s.id) + '"><td style="width:24px">' + riskDot(s.id) + '</td><td class="name">' + esc(s.name) + '<div class="small muted">' + esc(s.program || '') + (s.archived ? ' · <span class="badge">Archived</span>' : '') + '</div></td>' +
+        '<td class="nowrap">' + esc(yearLabel(s)) + '</td><td>' + esc(s.university) + '</td>' +
+        (admin ? '<td>' + statusBadge(s.status) + '</td><td class="small">' + esc(supName(s.supervisorId) || '—') + '</td>' : '') +
+        '<td class="small">' + (cp ? '<b>' + esc(cp.place) + '</b><div class="faint">until ' + fd(cp.endDate) + '</div>' : '<span class="faint">' + esc(s.dept || '—') + '</span>') + '</td>' +
+        '<td style="min-width:110px">' + bar(th.pct, true) + '<div class="small faint">' + th.done + '/' + th.total + '</div></td>' +
+        '<td>' + (p.n ? '<span class="badge warn">' + p.n + '</span>' : '<span class="faint">—</span>') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+
+VIEWS.common.approvals = function () {
+  var admin = S.me.role === 'Admin';
+  var L = [], M = [], X = [];
+  S.d.students.forEach(function (s) { var p = pendingFor(s.id); L = L.concat(p.leaves); M = M.concat(p.ms); if (admin) X = X.concat(p.ext); });
+  var byAge = function (a, b) { return String(a.submittedAt || a.updatedAt).localeCompare(String(b.submittedAt || b.updatedAt)); };
+  L.sort(byAge); M.sort(byAge);
+  var item = function (sid, main, sub, btns, when) {
+    return '<li><div class="main"><div class="t"><a href="#/student/' + esc(sid) + '">' + esc(stuName(sid)) + '</a></div><div>' + main + '</div>' + (sub ? '<div class="d">' + sub + '</div>' : '') + '</div>' +
+      '<div style="text-align:right"><div class="row-actions">' + btns + '</div>' + (when ? '<div class="small faint" style="margin-top:4px">' + when + '</div>' : '') + '</div></li>';
+  };
+  var leaves = L.map(function (l) {
+    var bal = leaveSum(l.studentId);
+    return item(l.studentId, '<b>' + esc(l.type) + '</b> · ' + (l.startDate === l.endDate ? fd(l.startDate) : fd(l.startDate) + ' – ' + fd(l.endDate)) + ' · <span class="mono">' + esc(l.days) + 'd</span>',
+      esc(l.reason || '') + (l.type === 'Annual' ? ' <span class="faint">(' + bal.annual.left + ' annual days left before this)</span>' : ''),
+      '<button class="btn sm ok" data-act="leaveDecide" data-id="' + esc(l.id) + '" data-v="approve">Approve</button><button class="btn sm bad" data-act="leaveDecide" data-id="' + esc(l.id) + '" data-v="reject">Reject</button>', 'sent ' + ago(l.submittedAt));
+  });
+  var ms = M.map(function (m) {
+    return item(m.studentId, '<b>' + esc(m.name) + '</b>', esc(m.note || ''), '<button class="btn sm ok" data-act="msDecide" data-id="' + esc(m.id) + '" data-v="verify">Verify</button><button class="btn sm bad" data-act="msDecide" data-id="' + esc(m.id) + '" data-v="revise">Send back</button>', 'sent ' + ago(m.submittedAt));
+  });
+  var ext = X.map(function (p) {
+    return item(p.studentId, '<b>Extension at ' + esc(p.place) + '</b> · ' + fd(p.startDate) + ' – ' + fd(p.endDate), esc(p.reason || ''),
+      '<button class="btn sm ok" data-act="extDecide" data-id="' + esc(p.id) + '" data-v="approve">Approve</button><button class="btn sm bad" data-act="extDecide" data-id="' + esc(p.id) + '" data-v="reject">Reject</button>', ago(p.updatedAt));
+  });
+  var total = L.length + M.length + X.length;
+  return '<div class="page-h"><div><h1>Approvals</h1><div class="sub">' + (total ? plural(total, 'item') + ' waiting, oldest first' : 'All clear') + '</div></div></div>' +
+    '<div class="stack">' + card('Leave requests <span class="badge">' + L.length + '</span>', leaves.length ? '<ul class="list">' + leaves.join('') + '</ul>' : empty('No leave waiting.')) +
+    card('Milestones submitted <span class="badge">' + M.length + '</span>', ms.length ? '<ul class="list">' + ms.join('') + '</ul>' : empty('No milestones waiting.')) +
+    (admin ? card('Extension requests <span class="badge">' + X.length + '</span>', ext.length ? '<ul class="list">' + ext.join('') + '</ul>' : empty('No extension requests.')) : '') + '</div>';
+};
+
+/** Shared student file for supervisor (read + approve) and admin (full edit). */
+VIEWS.common.student = function (id) {
+  var st = IX.stu[id];
+  if (!st) return card('Student not found', '<a href="#/students">Back to students</a>');
+  var admin = S.me.role === 'Admin', rk = risk(id), th = thesis(id), lv = leaveSum(id);
+  var leaves = of('leaves', id).slice().sort(function (a, b) { return b.startDate.localeCompare(a.startDate); });
+  var why = rk.why.length ? '<ul class="list attn">' + rk.why.map(function (w) { return '<li><span class="dot ' + (w.l === 2 ? 'red' : 'amber') + '"></span><div class="main small">' + esc(w.msg) + '</div></li>'; }).join('') + '</ul>' : '<p class="muted small" style="margin:0">On track.</p>';
+  var details = kv([
+    ['Programme', st.program], ['University', st.university], ['Year / stage', yearLabel(st)], ['Status', st.status],
+    ['Department now', [st.dept, st.deptPeriod && st.deptPeriod !== 'NOW' ? st.deptPeriod : ''].filter(Boolean).join(' · ')],
+    ['EDHKL supervisor', supName(st.supervisorId)], ['University supervisor', st.uniSupervisor], ['Reported', fd(st.reportDate)], ['Ends', fd(st.endDate)],
+    ['MMC', st.mmc]].concat(admin ? [['IC', st.ic]] : []).concat([['Phone', st.phone], ['Email', st.email]]).concat(admin ? [['Address', st.address], ['File no.', st.fileNo], ['Thumb / punch', st.attendance], ['First degree', st.degree], ['Intake', st.intake], ['Expected graduation', fd(st.expectedGraduation)], ['Notes', st.notes]] : []));
+  return '<div class="page-h"><a class="btn sm ghost" href="#/students">← Students</a></div>' +
+    '<div class="card hero" style="margin-bottom:14px"><div class="avatar">' + esc(initials(st.name)) + '</div><div style="flex:1;min-width:220px"><h1>' + esc(st.name) + '</h1>' +
+    '<div class="meta">' + riskDot(id) + statusBadge(st.status) + '<span class="badge">' + esc(yearLabel(st)) + '</span>' + (st.archived ? '<span class="badge bad">Archived</span>' : '') + '</div></div>' +
+    (admin ? '<div class="row-actions"><button class="btn" data-act="stuEdit" data-id="' + esc(id) + '">Edit details</button><button class="btn ' + (st.archived ? '' : 'bad') + '" data-act="stuArchive" data-id="' + esc(id) + '">' + (st.archived ? 'Restore' : 'Archive') + '</button></div>' : '') + '</div>' +
+    '<div class="grid g3" style="align-items:start"><div class="span2 stack">' +
+      card('Postings', timeline(id, admin), admin ? '<button class="btn sm" data-act="postNew" data-id="' + esc(id) + '">Add posting</button>' : '') +
+      card('Dissertation <span class="badge">' + th.done + '/' + th.total + '</span>', milestoneList(th.ms, admin ? 'admin' : 'supervisor'),
+        admin ? '<button class="btn sm" data-act="msNew" data-id="' + esc(id) + '">Add</button><button class="btn sm" data-act="msTemplate" data-id="' + esc(id) + '">Add template milestones</button>' : '') +
+      card('Leave · ' + today().slice(0, 4) + ' <span class="badge">' + lv.annual.left + ' annual left</span>', leaveTable(leaves, admin ? 'admin' : 'supervisor'),
+        admin ? '<button class="btn sm" data-act="leaveAdd" data-id="' + esc(id) + '">Record leave</button>' : '') +
+    '</div><div class="stack">' + card('Flags', why) + card('Details', details) + '</div></div>';
+};
+VIEWS.Supervisor.student = VIEWS.common.student;
+
+/* ============================================================== ADMIN VIEWS */
+
+VIEWS.Admin.dashboard = function () {
+  var all = S.d.students.filter(function (s) { return !s.archived; }), t = today(), soonDays = num('POSTING_ENDING_SOON_DAYS', 60);
+  var red = all.filter(function (s) { return risk(s.id).level === 'red'; });
+  var soon = [];
+  all.forEach(function (s) {
+    var cp = currentPosting(s.id);
+    if (cp && cp.endDate && daysBetween(t, cp.endDate) <= soonDays) soon.push({ s: s, p: cp, left: daysBetween(t, cp.endDate) });
+  });
+  soon.sort(function (a, b) { return a.left - b.left; });
+  var count = function (fn) { var o = {}; all.forEach(function (s) { var k = fn(s) || '—'; o[k] = (o[k] || 0) + 1; }); return Object.keys(o).map(function (k) { return [k, o[k]]; }).sort(function (a, b) { return b[1] - a[1]; }); };
+  var bars = function (pairs, filterKey) {
+    var max = Math.max.apply(null, pairs.map(function (p) { return p[1]; }).concat([1]));
+    return '<div class="hbars">' + pairs.map(function (p) {
+      return '<button class="hbar" type="button" data-act="dashFilter" data-k="' + filterKey + '" data-v="' + esc(p[0]) + '"><span class="lab" title="' + esc(p[0]) + '">' + esc(p[0]) + '</span><span class="track"><i style="width:' + (p[1] * 100 / max) + '%"></i></span><span class="n">' + p[1] + '</span></button>';
+    }).join('') + '</div>';
+  };
+  // Department load vs capacity (from Settings DEPT_CAPACITY)
+  var cap = {}; list(set_().DEPT_CAPACITY).forEach(function (x) { var p = x.split(':'); cap[p[0].trim().toUpperCase()] = +p[1]; });
+  var load = count(function (s) { return String(s.dept || '').toUpperCase(); });
+  var capRows = load.filter(function (p) { return cap[p[0]]; }).map(function (p) {
+    var over = p[1] > cap[p[0]];
+    return '<li><div class="main"><div class="t">' + esc(p[0]) + '</div>' + bar(p[1] * 100 / cap[p[0]], true) + '</div><span class="mono ' + (over ? '' : 'muted') + '" style="' + (over ? 'color:var(--bad);font-weight:600' : '') + '">' + p[1] + '/' + cap[p[0]] + '</span></li>';
+  });
+  var since = Math.round((Date.now() - S.loadedAt) / 60000);
+  return '<div class="page-h"><div><h1>Dashboard</h1><div class="sub">' + esc(set_().DEPARTMENT_NAME || '') + '</div></div><span class="spacer"></span>' +
+    '<span class="small faint">Data loaded ' + (since < 1 ? 'just now' : since + ' min ago') + '</span><button class="btn sm" data-act="reload">Reload from Sheet</button></div>' +
+    '<div class="grid g5" style="margin-bottom:14px">' +
+      tile('Active students', all.length, S.d.students.length - all.length + ' archived', '', 'data-act="dashFilter" data-k="clear"') +
+      tile('Waiting approval', approvalsCount(), 'leave, milestones, extensions', approvalsCount() ? 'warn' : '', 'data-go="approvals"') +
+      tile('Postings ending', soon.length, 'within ' + soonDays + ' days', soon.length ? 'warn' : '', 'data-act="dashFilter" data-k="soon"') +
+      tile('Red flags', red.length, 'overdue or past end date', red.length ? 'bad' : 'ok', 'data-act="dashFilter" data-k="risk" data-v="red"') +
+      tile('No sign-in yet', all.filter(function (s) { return !s.email; }).length, 'students without email', '', 'data-act="dashFilter" data-k="noEmail"') +
+    '</div><div class="grid g3" style="margin-bottom:14px">' +
+      card('By status', bars(count(function (s) { return s.status; }), 'status')) +
+      card('By university', bars(count(function (s) { return s.university; }), 'university')) +
+      card('By year / stage', bars(count(yearLabel), 'year')) +
+    '</div><div class="grid g3">' +
+      '<div class="span2">' + card('Postings ending soon', soon.length ? '<div class="tbl-wrap"><table><thead><tr><th>Student</th><th>Place</th><th>Ends</th><th>Left</th><th>Next</th></tr></thead><tbody>' + soon.map(function (x) {
+        var np = nextPosting(x.s.id);
+        return '<tr class="click" data-go="student/' + esc(x.s.id) + '"><td class="name">' + esc(x.s.name) + '</td><td>' + esc(x.p.place) + '</td><td class="nowrap">' + fd(x.p.endDate) + '</td><td class="mono">' + x.left + 'd</td><td class="small">' + (np ? esc(np.place) + ' · ' + fd(np.startDate) : '<span class="badge warn">None planned</span>') + '</td></tr>';
+      }).join('') + '</tbody></table></div>' : empty('No postings end in the next ' + soonDays + ' days.')) + '</div>' +
+      card('Department load', capRows.length ? '<ul class="list">' + capRows.join('') + '</ul>' : '<p class="muted small" style="margin:0">Set DEPT_CAPACITY in Settings, e.g. ED:6|ISO1:5</p>') +
+    '</div>';
+};
+
+function adminFilterRows() {
+  var f = S.ui.f, q = S.ui.q.toLowerCase(), t = today();
+  return S.d.students.filter(function (s) {
+    if (!f.archived && s.archived) return false;
+    if (f.archived && !s.archived) return false;
+    if (f.status && s.status !== f.status) return false;
+    if (f.university && s.university !== f.university) return false;
+    if (f.year && yearLabel(s) !== f.year) return false;
+    if (f.supervisor && s.supervisorId !== f.supervisor) return false;
+    if (f.risk && risk(s.id).level !== f.risk) return false;
+    if (f.noEmail && s.email) return false;
+    if (f.soon) { var cp = currentPosting(s.id); if (!cp || !cp.endDate || daysBetween(t, cp.endDate) > num('POSTING_ENDING_SOON_DAYS', 60)) return false; }
+    if (q && (s.name + ' ' + s.mmc + ' ' + s.email + ' ' + s.dept + ' ' + s.university).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+}
+
+VIEWS.Admin.students = function () {
+  var f = S.ui.f, rows = adminFilterRows();
+  var uniq = function (fn) { var o = {}; S.d.students.forEach(function (s) { var v = fn(s); if (v) o[v] = 1; }); return Object.keys(o).sort(); };
+  var sel = function (key, label, opts) {
+    return '<select class="input" data-filter="' + key + '" aria-label="' + label + '"><option value="">' + label + '</option>' + opts.map(function (o) {
+      var v = typeof o === 'object' ? o[0] : o, l = typeof o === 'object' ? o[1] : o;
+      return '<option value="' + esc(v) + '"' + (String(f[key] || '') === String(v) ? ' selected' : '') + '>' + esc(l) + '</option>';
+    }).join('') + '</select>';
+  };
+  var chips = [];
+  if (f.soon) chips.push('Posting ending soon');
+  if (f.noEmail) chips.push('No email');
+  return '<div class="page-h"><div><h1>Students</h1><div class="sub">' + plural(rows.length, 'student') + ' shown</div></div><span class="spacer"></span>' +
+    '<button class="btn" data-act="exportCsv">Export CSV</button><button class="btn pri" data-act="stuNew">Add student</button></div>' +
+    '<div class="toolbar"><input class="input search" id="aq" placeholder="Search name, MMC, email, department" value="' + esc(S.ui.q) + '">' +
+      sel('status', 'Any status', uniq(function (s) { return s.status; })) + sel('university', 'Any university', uniq(function (s) { return s.university; })) +
+      sel('year', 'Any year', uniq(yearLabel)) + sel('supervisor', 'Any supervisor', S.d.supervisors.slice().sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (s) { return [s.id, s.name]; })) +
+      sel('risk', 'Any flag', [['red', 'Red'], ['amber', 'Amber'], ['green', 'Green']]) +
+      '<label class="chk"><input type="checkbox" data-filter="archived"' + (f.archived ? ' checked' : '') + '> Archived</label>' +
+      chips.map(function (c) { return '<span class="badge acc">' + esc(c) + '</span>'; }).join('') +
+      (Object.keys(f).some(function (k) { return f[k]; }) || S.ui.q ? '<button class="btn sm ghost" data-act="dashFilter" data-k="clear">Clear filters</button>' : '') +
+    '</div>' + card('Roster', cohortTable(rows, true));
+};
+VIEWS.Admin.student = VIEWS.common.student;
+
+VIEWS.Admin.planner = function () {
+  var t = today(), start = t.slice(0, 7);
+  var months = [];
+  var y = +start.slice(0, 4), m = +start.slice(5, 7) - 3;
+  for (var i = 0; i < 12; i++) { m++; if (m > 12) { m = 1; y++; } if (m < 1) { m += 12; y--; } months.push(y + '-' + ('0' + m).slice(-2)); }
+  var uni = S.ui.planUni || '';
+  var rows = S.d.students.filter(function (s) { return !s.archived && (!uni || s.university === uni); }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+  var places = {};
+  var cells = function (sid) {
+    var ps = postingsOf(sid).filter(function (p) { return p.status === 'Approved' && p.startDate && p.endDate; });
+    return months.map(function (mo) {
+      var a = mo + '-01', b = mo + '-31';
+      var hit = ps.filter(function (p) { return p.startDate <= b && p.endDate >= a; }).pop();
+      var cur = mo === start;
+      if (!hit) return '<td class="c' + (cur ? ' cur' : '') + '"></td>';
+      places[hit.place] = 1;
+      return '<td class="c' + (cur ? ' cur' : '') + '"><span class="pl" style="background:' + placeColor(hit.place) + '" title="' + esc(hit.place + ': ' + fd(hit.startDate) + ' – ' + fd(hit.endDate)) + '">' + esc(hit.place) + '</span></td>';
+    }).join('');
+  };
+  var body = rows.map(function (s) { return '<tr class="click" data-go="student/' + esc(s.id) + '"><td class="nm" title="' + esc(s.name) + '">' + esc(s.name) + '</td>' + cells(s.id) + '</tr>'; }).join('');
+  var unis = {}; S.d.students.forEach(function (s) { if (s.university) unis[s.university] = 1; });
+  return '<div class="page-h"><div><h1>Rotation planner</h1><div class="sub">Approved postings by month · this month highlighted</div></div><span class="spacer"></span>' +
+    '<select class="input" data-act-change="planUni"><option value="">All universities</option>' + Object.keys(unis).sort().map(function (u) { return '<option' + (u === uni ? ' selected' : '') + '>' + esc(u) + '</option>'; }).join('') + '</select></div>' +
+    '<section class="card"><div class="tbl-wrap" style="border-top:0;margin-top:-16px"><table class="plan"><thead><tr><th style="text-align:left;padding-left:12px">Student</th>' +
+    months.map(function (mo) { return '<th class="' + (mo === start ? 'cur' : '') + '">' + MON[+mo.slice(5) - 1] + '<div class="faint" style="font-weight:400">' + mo.slice(2, 4) + '</div></th>'; }).join('') +
+    '</tr></thead><tbody>' + body + '</tbody></table></div></section>' +
+    '<div class="legend" style="margin-top:12px">' + Object.keys(places).sort().map(function (p) { return '<span><i style="background:' + placeColor(p) + '"></i>' + esc(p) + '</span>'; }).join('') + '</div>';
+};
+
+VIEWS.Admin.supervisors = function () {
+  var rows = S.d.supervisors.slice().sort(function (a, b) { return (b.active !== false) - (a.active !== false) || a.name.localeCompare(b.name); });
+  var load = {}, pend = {};
+  S.d.students.forEach(function (s) { if (s.archived) return; load[s.supervisorId] = (load[s.supervisorId] || 0) + 1; var p = pendingFor(s.id); pend[s.supervisorId] = (pend[s.supervisorId] || 0) + p.leaves.length + p.ms.length; });
+  var unassigned = S.d.students.filter(function (s) { return !s.archived && !s.supervisorId; });
+  return '<div class="page-h"><div><h1>Supervisors</h1><div class="sub">Sign in with name + NSR number</div></div><span class="spacer"></span><button class="btn pri" data-act="supNew">Add supervisor</button></div>' +
+    (unassigned.length ? '<section class="card" style="margin-bottom:14px;border-color:var(--warn)"><h2><span class="dot amber"></span> ' + plural(unassigned.length, 'student') + ' without an EDHKL supervisor</h2><div class="small">' +
+      unassigned.map(function (s) { return '<a href="#/student/' + esc(s.id) + '">' + esc(s.name) + '</a>'; }).join(' · ') + '</div></section>' : '') +
+    card('All supervisors', '<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>NSR</th><th>Email</th><th>Students</th><th>Waiting</th><th>Status</th><th></th></tr></thead><tbody>' +
+      rows.map(function (s) {
+        return '<tr><td class="name">' + esc(s.name) + '</td><td class="mono">' + (s.nsr ? esc(s.nsr) : '<span class="badge bad">Missing</span>') + '</td><td class="small">' + esc(s.email || '') + '</td>' +
+          '<td class="mono">' + (load[s.id] || 0) + '</td><td>' + (pend[s.id] ? '<span class="badge warn">' + pend[s.id] + '</span>' : '<span class="faint">—</span>') + '</td>' +
+          '<td>' + (s.active === false ? '<span class="badge">Inactive</span>' : '<span class="badge ok">Active</span>') + '</td>' +
+          '<td><div class="row-actions"><button class="btn sm" data-act="supEdit" data-id="' + esc(s.id) + '">Edit</button><button class="btn sm" data-act="supMerge" data-id="' + esc(s.id) + '">Merge…</button></div></td></tr>';
+      }).join('') + '</tbody></table></div>');
+};
+
+VIEWS.Admin.settings = function () {
+  var st = set_();
+  var LABEL = {
+    SYSTEM_NAME: 'System name', DEPARTMENT_NAME: 'Department name', STUDENT_STATUSES: 'Student statuses (separate with |)', STAGES: 'Stages (separate with |)',
+    PROGRAMS: 'Programmes', LEAVE_TYPES: 'Leave types', ANNUAL_LEAVE_ENTITLEMENT: 'Annual leave days per year', EMERGENCY_LEAVE_ENTITLEMENT: 'Emergency leave days per year',
+    POSTING_ENDING_SOON_DAYS: '"Ending soon" warning (days)', DISSERTATION_STALE_DAYS: 'No dissertation update warning (days)', REMINDER_DAYS: 'Approval waiting warning (days)',
+    DISSERTATION_TEMPLATE: 'Milestone template for new students', DEPT_CAPACITY: 'Department capacity (DEPT:number|…)'
+  };
+  var keys = Object.keys(LABEL).concat(Object.keys(st).filter(function (k) { return !LABEL[k]; }).sort());
+  var hol = S.d.holidays.slice().sort(function (a, b) { return a.date.localeCompare(b.date); });
+  return '<div class="page-h"><div><h1>Settings</h1><div class="sub">Changes apply straight away for everyone</div></div><span class="spacer"></span><button class="btn" data-act="passcode">Change my passcode</button></div>' +
+    '<div class="grid g3" style="align-items:start"><div class="span2">' + card('System', '<div class="tbl-wrap"><table><tbody>' + keys.map(function (k) {
+      return '<tr><td style="width:40%"><b>' + esc(LABEL[k] || k) + '</b><div class="small faint mono">' + esc(k) + '</div></td><td class="small" style="word-break:break-word">' + esc(st[k] || '') + '</td><td style="width:70px"><button class="btn sm" data-act="setEdit" data-id="' + esc(k) + '">Edit</button></td></tr>';
+    }).join('') + '</tbody></table></div>') + '</div>' +
+    card('Public holidays', (hol.length ? '<ul class="list">' + hol.map(function (h) {
+      return '<li><div class="main"><div class="t">' + esc(h.name) + '</div><div class="d">' + fd(h.date) + '</div></div><button class="btn sm bad" data-act="holDel" data-id="' + esc(h.id) + '">Remove</button></li>';
+    }).join('') + '</ul>' : empty('None yet. Leave days skip these dates.')), '<button class="btn sm" data-act="holNew">Add</button>') + '</div>';
+};
+
+var AUDIT = { rows: null, loading: false };
+VIEWS.Admin.audit = function () {
+  if (!AUDIT.rows && !AUDIT.loading) {
+    AUDIT.loading = true;
+    api('audit', S.token, 300).then(function (r) { AUDIT.rows = r; }, function (e) { toast(e.message, 'bad'); AUDIT.rows = []; })
+      .finally(function () { AUDIT.loading = false; if (parseRoute().name === 'audit') render(); });
+  }
+  var body = !AUDIT.rows ? '<div class="skel"></div>' : AUDIT.rows.length ? '<div class="tbl-wrap"><table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Record</th><th>Change</th></tr></thead><tbody>' +
+    AUDIT.rows.map(function (a) {
+      var diff = '';
+      try {
+        var b = a.before ? JSON.parse(a.before) : {}, n = a.after ? JSON.parse(a.after) : {};
+        diff = Object.keys(n).filter(function (k) { return k !== 'updatedAt' && String(b[k]) !== String(n[k]); }).slice(0, 4).map(function (k) {
+          return '<div><span class="faint">' + esc(k) + ':</span> ' + (a.before ? esc(String(b[k] == null ? '' : b[k]).slice(0, 40)) + ' → ' : '') + esc(String(n[k]).slice(0, 60)) + '</div>';
+        }).join('');
+      } catch (e) {}
+      return '<tr><td class="nowrap small">' + esc(a.at) + '</td><td class="small">' + esc(a.actor) + '<div class="faint">' + esc(a.role) + '</div></td><td><span class="badge">' + esc(a.action) + '</span></td>' +
+        '<td class="small">' + esc(a.table) + '<div class="faint mono">' + esc(a.rowId) + '</div></td><td class="small">' + diff + '</td></tr>';
+    }).join('') + '</tbody></table></div>' : empty('No changes logged yet.');
+  return '<div class="page-h"><div><h1>Audit log</h1><div class="sub">Latest 300 changes, newest first</div></div><span class="spacer"></span><button class="btn sm" data-act="auditReload">Reload</button></div>' + card('Changes', body);
+};
+
+/* ================================================================= ACTIONS */
+
+function find(kind, id) { return S.d[kind].filter(function (r) { return r.id === id; })[0]; }
+function tmp(kind, row) { row.id = 'tmp-' + Date.now(); S.d[kind].push(row); }
+function patch(kind, id, p) { var r = find(kind, id); if (r) Object.keys(p).forEach(function (k) { r[k] = p[k]; }); }
+
+var A = {
+  /* student */
+  leaveNew: function () {
+    leaveForm({ title: 'Apply for leave', submit: 'Send request', studentId: myId() }, function (v) {
+      run('leave.submit', v, { done: 'Leave request sent to your supervisor.', optimistic: function () {
+        tmp('leaves', { studentId: myId(), type: v.type, startDate: v.startDate, endDate: v.endDate || v.startDate, halfDay: v.halfDay, days: workingDays(v.startDate, v.endDate || v.startDate, v.halfDay), reason: v.reason, status: 'Pending', submittedAt: today() });
+      } }).catch(function () {});
+    });
+  },
+  leaveCancel: function (id) {
+    var l = find('leaves', id);
+    confirmBox('Cancel this leave?', esc(l.type) + ' leave, ' + fd(l.startDate) + (l.endDate !== l.startDate ? ' – ' + fd(l.endDate) : '') + '.', 'Cancel leave', function () {
+      run('leave.cancel', { id: id }, { done: 'Leave cancelled.', optimistic: function () { patch('leaves', id, { status: 'Cancelled' }); } }).catch(function () {});
+    }, true);
+  },
+  msUpdate: function (id) {
+    var m = find('milestones', id);
+    form({ title: m.name, submit: 'Save', intro: m.status === 'Needs revision' ? '<b>Your supervisor asked for changes:</b> ' + esc(m.supervisorNote || '') : '',
+      fields: [
+        { name: 'status', label: 'Status', type: 'select', options: ['Not started', 'In progress', 'Submitted'], value: m.status === 'Needs revision' ? 'In progress' : m.status, hint: 'Choose "Submitted" when it is ready for your supervisor to verify.' },
+        { name: 'targetDate', label: 'Target date', type: 'date', value: m.targetDate },
+        { name: 'note', label: 'Progress note', type: 'textarea', value: m.note }
+      ],
+      onSubmit: function (v) {
+        v.id = id;
+        run('milestone.update', v, { done: v.status === 'Submitted' ? 'Sent to your supervisor for verification.' : 'Saved.', optimistic: function () { patch('milestones', id, { status: v.status, targetDate: v.targetDate, note: v.note }); } }).catch(function () {});
+      } });
+  },
+  extReq: function () {
+    form({ title: 'Request an extension (Perlanjutan)', submit: 'Send request', intro: 'The department admin reviews extension requests.',
+      fields: [{ name: 'place', label: 'Place', required: true, value: 'HKL' }, { name: 'startDate', label: 'From', type: 'date', required: true },
+               { name: 'endDate', label: 'To', type: 'date', required: true }, { name: 'reason', label: 'Reason', type: 'textarea', required: true }],
+      validate: function (v) { return v.endDate < v.startDate ? 'The end date is before the start date.' : ''; },
+      onSubmit: function (v) {
+        run('extension.request', v, { done: 'Extension request sent.', optimistic: function () { tmp('postings', { studentId: myId(), type: 'Extension', place: v.place, startDate: v.startDate, endDate: v.endDate, status: 'Pending', reason: v.reason }); } }).catch(function () {});
+      } });
+  },
+  profileEdit: function () {
+    var st = IX.stu[myId()];
+    form({ title: 'Edit contact details', fields: [
+      { name: 'phone', label: 'Phone', type: 'tel', value: st.phone, max: 40 },
+      { name: 'email', label: 'Email (used to sign in)', type: 'email', value: st.email, required: true, max: 120 },
+      { name: 'address', label: 'Address', type: 'textarea', value: st.address, max: 300 }],
+      validate: function (v) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.email) ? '' : 'Please enter a valid email.'; },
+      onSubmit: function (v) { run('profile.update', v, { done: 'Profile updated.', optimistic: function () { patch('students', myId(), v); } }).catch(function () {}); } });
+  },
+
+  /* supervisor + admin */
+  leaveDecide: function (id, el) {
+    var l = find('leaves', id), ok = el.getAttribute('data-v') === 'approve';
+    var title = (ok ? 'Approve' : 'Reject') + ' leave · ' + stuName(l.studentId);
+    form({ title: title, submit: ok ? 'Approve' : 'Reject', intro: esc(l.type) + ' · ' + fd(l.startDate) + (l.endDate !== l.startDate ? ' – ' + fd(l.endDate) : '') + ' · ' + esc(l.days) + ' day(s)' + (l.reason ? '<br>“' + esc(l.reason) + '”' : ''),
+      fields: [{ name: 'note', label: ok ? 'Note (optional)' : 'Reason for rejecting', type: 'textarea', required: !ok }],
+      onSubmit: function (v) {
+        run('leave.decide', { id: id, decision: ok ? 'approve' : 'reject', note: v.note }, { done: ok ? 'Leave approved.' : 'Leave rejected.',
+          optimistic: function () { patch('leaves', id, { status: ok ? 'Approved' : 'Rejected', decisionNote: v.note, decidedBy: S.me.name }); } }).catch(function () {});
+      } });
+  },
+  msDecide: function (id, el) {
+    var m = find('milestones', id), ok = el.getAttribute('data-v') === 'verify';
+    form({ title: (ok ? 'Verify' : 'Send back') + ' · ' + m.name, submit: ok ? 'Verify' : 'Send back', intro: esc(stuName(m.studentId)) + (m.note ? '<br>“' + esc(m.note) + '”' : ''),
+      fields: [{ name: 'note', label: ok ? 'Comment (optional)' : 'What needs to change', type: 'textarea', required: !ok }],
+      onSubmit: function (v) {
+        run('milestone.decide', { id: id, decision: ok ? 'verify' : 'revise', note: v.note }, { done: ok ? 'Milestone verified.' : 'Sent back to the student.',
+          optimistic: function () { patch('milestones', id, { status: ok ? 'Verified' : 'Needs revision', supervisorNote: v.note, verifiedBy: ok ? S.me.name : '' }); } }).catch(function () {});
+      } });
+  },
+  msTarget: function (id) {
+    var m = find('milestones', id);
+    form({ title: 'Target date · ' + m.name, fields: [{ name: 'targetDate', label: 'Target date', type: 'date', value: m.targetDate }],
+      onSubmit: function (v) { run('milestone.setTarget', { id: id, targetDate: v.targetDate }, { done: 'Target date saved.', optimistic: function () { patch('milestones', id, v); } }).catch(function () {}); } });
+  },
+
+  /* admin */
+  extDecide: function (id, el) {
+    var p = find('postings', id), ok = el.getAttribute('data-v') === 'approve';
+    form({ title: (ok ? 'Approve' : 'Reject') + ' extension · ' + stuName(p.studentId), submit: ok ? 'Approve' : 'Reject',
+      intro: esc(p.place) + ' · ' + fd(p.startDate) + ' – ' + fd(p.endDate) + (p.reason ? '<br>“' + esc(p.reason) + '”' : ''),
+      fields: [{ name: 'note', label: ok ? 'Note (optional)' : 'Reason for rejecting', type: 'textarea', required: !ok }],
+      onSubmit: function (v) {
+        run('extension.decide', { id: id, decision: ok ? 'approve' : 'reject', note: v.note }, { done: ok ? 'Extension approved.' : 'Extension rejected.',
+          optimistic: function () { patch('postings', id, { status: ok ? 'Approved' : 'Rejected', note: v.note }); } }).catch(function () {});
+      } });
+  },
+  stuNew: function () { studentForm(null); },
+  stuEdit: function (id) { studentForm(IX.stu[id]); },
+  stuArchive: function (id) {
+    var st = IX.stu[id], arch = !st.archived;
+    confirmBox(arch ? 'Archive student?' : 'Restore student?', esc(st.name) + (arch ? ' will be hidden from lists and cannot sign in. Nothing is deleted.' : ' will appear in lists again and can sign in.'), arch ? 'Archive' : 'Restore', function () {
+      run('student.archive', { id: id, archived: arch }, { done: arch ? 'Archived.' : 'Restored.', optimistic: function () { patch('students', id, { archived: arch }); } }).catch(function () {});
+    }, arch);
+  },
+  postNew: function (sid) { postingForm(sid, null); },
+  postEdit: function (id) { var p = find('postings', id); postingForm(p.studentId, p); },
+  msNew: function (sid) { milestoneForm(sid, null); },
+  msEdit: function (id) { var m = find('milestones', id); milestoneForm(m.studentId, m); },
+  msTemplate: function (sid) { run('milestone.applyTemplate', { studentId: sid }, { done: 'Template milestones added.' }).catch(function () {}); },
+  leaveEdit: function (id) {
+    var l = find('leaves', id);
+    leaveForm({ title: 'Edit leave · ' + stuName(l.studentId), studentId: l.studentId, leave: l, admin: true }, function (v) {
+      run('leave.save', { id: id, fields: v }, { done: 'Leave updated.', optimistic: function () { patch('leaves', id, v); } }).catch(function () {});
+    });
+  },
+  leaveAdd: function (sid) {
+    leaveForm({ title: 'Record leave · ' + stuName(sid), submit: 'Record as approved', studentId: sid }, function (v) {
+      v.studentId = sid;
+      run('leave.submit', v, { done: 'Leave recorded.' }).catch(function () {});
+    });
+  },
+  supNew: function () { supervisorForm(null); },
+  supEdit: function (id) { supervisorForm(IX.sup[id]); },
+  supMerge: function (id) {
+    var s = IX.sup[id];
+    var opts = S.d.supervisors.filter(function (x) { return x.id !== id; }).sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (x) { return { value: x.id, label: x.name }; });
+    form({ title: 'Merge ' + s.name, submit: 'Merge', intro: 'Moves all of this supervisor\'s students to the one you pick, then marks this entry inactive. Use it for duplicates like "DR MAWAR" and "DR MAWAR BINTI AYUB".',
+      fields: [{ name: 'intoId', label: 'Keep this supervisor', type: 'select', options: opts, required: true }],
+      onSubmit: function (v) { run('supervisor.merge', { fromId: id, intoId: v.intoId }, { done: 'Merged.' }).catch(function () {}); } });
+  },
+  setEdit: function (key) {
+    var v = set_()[key] || '', long = v.length > 50 || /TEMPLATE|STATUSES|TYPES|CAPACITY|STAGES|PROGRAMS/.test(key);
+    form({ title: 'Edit setting', intro: '<span class="mono">' + esc(key) + '</span>', fields: [{ name: 'value', label: 'Value', type: long ? 'textarea' : 'text', value: v, max: 2000, hint: /\|/.test(v) ? 'Separate items with |' : '' }],
+      onSubmit: function (x) { run('setting.save', { key: key, value: x.value }, { done: 'Setting saved.', optimistic: function () { S.d.settings[key] = x.value; } }).catch(function () {}); } });
+  },
+  holNew: function () {
+    form({ title: 'Add public holiday', fields: [{ name: 'date', label: 'Date', type: 'date', required: true }, { name: 'name', label: 'Name', required: true, max: 120 }],
+      onSubmit: function (v) { run('holiday.save', v, { done: 'Holiday added.', optimistic: function () { tmp('holidays', v); } }).catch(function () {}); } });
+  },
+  holDel: function (id) { run('holiday.delete', { id: id }, { done: 'Removed.', optimistic: function () { S.d.holidays = S.d.holidays.filter(function (h) { return h.id !== id; }); } }).catch(function () {}); },
+  passcode: function () {
+    form({ title: 'Change admin passcode', fields: [{ name: 'p1', label: 'New passcode', type: 'password', required: true }, { name: 'p2', label: 'Type it again', type: 'password', required: true }],
+      validate: function (v) { return v.p1.length < 8 ? 'Use at least 8 characters.' : v.p1 !== v.p2 ? 'The two entries do not match.' : ''; },
+      onSubmit: function (v) { run('admin.passcode', { passcode: v.p1 }, { done: 'Passcode changed.' }).catch(function () {}); } });
+  },
+  reload: function () {
+    busy(1);
+    api('refresh', S.token).then(function (d) { setData(d); render(); toast('Reloaded from the Sheet.', 'ok'); }, function (e) { toast(e.message, 'bad'); }).finally(function () { busy(-1); });
+  },
+  auditReload: function () { AUDIT.rows = null; render(); },
+  dashFilter: function (_, el) {
+    var k = el.getAttribute('data-k'), v = el.getAttribute('data-v');
+    S.ui.f = {}; S.ui.q = '';
+    if (k !== 'clear') S.ui.f[k] = v || true;
+    if (parseRoute().name === 'students') render(); else go('students');
+  },
+  exportCsv: function () {
+    var cols = ['id', 'name', 'ic', 'mmc', 'program', 'university', 'year', 'stage', 'status', 'dept', 'supervisor', 'uniSupervisor', 'reportDate', 'endDate', 'phone', 'email', 'currentPosting', 'currentPostingEnds', 'milestonesVerified', 'flag'];
+    var cell = function (v) { v = String(v == null ? '' : v); if (/^[=+\-@]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var lines = [cols.join(',')].concat(adminFilterRows().map(function (s) {
+      var cp = currentPosting(s.id), th = thesis(s.id);
+      var o = Object.assign({}, s, { supervisor: supName(s.supervisorId), currentPosting: cp ? cp.place : '', currentPostingEnds: cp ? cp.endDate : '', milestonesVerified: th.done + '/' + th.total, flag: risk(s.id).level });
+      return cols.map(function (c) { return cell(o[c]); }).join(',');
+    }));
+    var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'hkl-poms-students-' + today() + '.csv'; a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  }
+};
+
+function leaveForm(o, cb) {
+  var l = o.leave || {}, types = list(set_().LEAVE_TYPES);
+  var fields = [
+    { name: 'type', label: 'Leave type', type: 'select', options: types, value: l.type || types[0], required: true },
+    { name: 'startDate', label: 'From', type: 'date', value: l.startDate || '', required: true },
+    { name: 'endDate', label: 'To', type: 'date', value: l.endDate || '', hint: 'Leave empty for a single day.' },
+    { name: 'halfDay', label: 'Half day (single day only)', type: 'checkbox', value: l.halfDay },
+    { name: 'reason', label: 'Reason', type: 'textarea', value: l.reason || '', max: 500 }
+  ];
+  if (o.admin) fields.push({ name: 'status', label: 'Status', type: 'select', options: ['Pending', 'Approved', 'Rejected', 'Cancelled'], value: l.status },
+                           { name: 'decisionNote', label: 'Decision note', type: 'text', value: l.decisionNote || '' });
+  form({ title: o.title, submit: o.submit || 'Save', fields: fields,
+    preview: function (v) {
+      if (!v.startDate) return '';
+      var end = v.endDate || v.startDate;
+      if (end < v.startDate) return '';
+      var n = workingDays(v.startDate, end, v.halfDay), bal = leaveSum(o.studentId);
+      var b = v.type === 'Annual' ? bal.annual : v.type === 'Emergency' ? bal.emergency : null;
+      return plural(n, 'working day') + ' (weekends and public holidays skipped)' + (b && !o.leave ? ' · ' + (b.left - n) + ' ' + v.type.toLowerCase() + ' days left after this' : '');
+    },
+    validate: function (v) {
+      var end = v.endDate || v.startDate;
+      if (end < v.startDate) return 'The end date is before the start date.';
+      if (!workingDays(v.startDate, end, v.halfDay)) return 'Those dates are all weekends or public holidays.';
+      return '';
+    },
+    onSubmit: function (v) { v.endDate = v.endDate || v.startDate; cb(v); } });
+}
+
+function studentForm(st) {
+  var s = st || {}, set = set_();
+  var sups = [{ value: '', label: '— none —' }].concat(S.d.supervisors.filter(function (x) { return x.active !== false || x.id === s.supervisorId; })
+    .sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (x) { return { value: x.id, label: x.name }; }));
+  var opt = function (k, cur) { var l = list(set[k]); if (cur && l.indexOf(cur) < 0) l.push(cur); return l; };
+  form({ title: st ? 'Edit ' + st.name : 'Add student', wide: true, submit: st ? 'Save changes' : 'Add student',
+    intro: st ? '' : 'Dissertation milestones from the template are added automatically.',
+    fields: [
+      { name: 'name', label: 'Full name', value: s.name, required: true, full: true, max: 120 },
+      { name: 'ic', label: 'IC number', value: s.ic, max: 20 }, { name: 'mmc', label: 'MMC number', value: s.mmc, max: 20 },
+      { name: 'email', label: 'Email (sign-in)', type: 'email', value: s.email, max: 120 }, { name: 'phone', label: 'Phone', type: 'tel', value: s.phone, max: 40 },
+      { name: 'program', label: 'Programme', type: 'select', options: opt('PROGRAMS', s.program), value: s.program },
+      { name: 'university', label: 'University', value: s.university, max: 60 },
+      { name: 'year', label: 'Year of study', type: 'number', value: s.year, step: 1 },
+      { name: 'stage', label: 'Stage', type: 'select', options: [''].concat(opt('STAGES', s.stage)), value: s.stage || '' },
+      { name: 'status', label: 'Status', type: 'select', options: opt('STUDENT_STATUSES', s.status), value: s.status || 'ACTIVE' },
+      { name: 'dept', label: 'Department now (JAB)', value: s.dept, max: 60 },
+      { name: 'deptPeriod', label: 'Department period', value: s.deptPeriod, max: 60, hint: 'e.g. NOW or 06.07.2026 - 12.07.2026' },
+      { name: 'supervisorId', label: 'EDHKL supervisor', type: 'select', options: sups, value: s.supervisorId || '' },
+      { name: 'uniSupervisor', label: 'University supervisor', value: s.uniSupervisor, max: 120 },
+      { name: 'reportDate', label: 'Reported to department', type: 'date', value: s.reportDate },
+      { name: 'endDate', label: 'Ends in department', type: 'date', value: s.endDate },
+      { name: 'position', label: 'Position', value: s.position || 'PEGAWAI PERUBATAN SARJANA', max: 80 }, { name: 'grade', label: 'Grade', value: s.grade, max: 10 },
+      { name: 'fileNo', label: 'File no.', value: s.fileNo, max: 40 }, { name: 'attendance', label: 'Thumb ID / punch card', value: s.attendance, max: 40 },
+      { name: 'degree', label: 'First degree', value: s.degree, max: 120 }, { name: 'intake', label: 'Intake', value: s.intake, max: 40 },
+      { name: 'expectedGraduation', label: 'Expected graduation', type: 'date', value: s.expectedGraduation },
+      { name: 'leaveEntitlement', label: 'Annual leave (override)', type: 'number', value: s.leaveEntitlement, hint: 'Blank = ' + (set.ANNUAL_LEAVE_ENTITLEMENT || 30) + ' days' },
+      { name: 'altEmails', label: 'Other emails (sign-in)', value: s.altEmails, full: true, max: 300, hint: 'Separate with commas' },
+      { name: 'address', label: 'Address', type: 'textarea', value: s.address, full: true, max: 300 },
+      { name: 'notes', label: 'Admin notes', type: 'textarea', value: s.notes, full: true, max: 1000 }
+    ],
+    onSubmit: function (v) {
+      run('student.save', { id: st ? st.id : '', fields: v }, { done: st ? 'Saved.' : 'Student added.', optimistic: st ? function () { patch('students', st.id, v); } : null })
+        .then(function (r) { if (!st && r && r.changed.Students) go('student/' + r.changed.Students[0].id); }).catch(function () {});
+    } });
+}
+
+function postingForm(sid, p) {
+  p = p || {};
+  var rounds = of('postings', sid).map(function (x) { return +x.round || 0; });
+  form({ title: (p.id ? 'Edit posting · ' : 'Add posting · ') + stuName(sid), submit: 'Save',
+    fields: [
+      { name: 'place', label: 'Place', value: p.place, required: true, max: 120 },
+      { name: 'type', label: 'Type', type: 'select', options: [{ value: 'Posting', label: 'Posting (Penempatan)' }, { value: 'Extension', label: 'Extension (Perlanjutan)' }], value: p.type || 'Posting' },
+      { name: 'startDate', label: 'From', type: 'date', value: p.startDate }, { name: 'endDate', label: 'To', type: 'date', value: p.endDate },
+      { name: 'round', label: 'Round', type: 'number', value: p.round || Math.max.apply(null, [0].concat(rounds)) + 1 },
+      { name: 'status', label: 'Status', type: 'select', options: ['Approved', 'Pending', 'Rejected'], value: p.status || 'Approved' },
+      { name: 'note', label: 'Note', type: 'text', value: p.note, max: 500 }
+    ],
+    extraBtn: p.id ? '<button type="button" class="btn bad" id="mDel">Delete</button>' : '',
+    validate: function (v) { return v.startDate && v.endDate && v.endDate < v.startDate ? 'The end date is before the start date.' : ''; },
+    onSubmit: function (v) {
+      v.studentId = sid;
+      run('posting.save', { id: p.id || '', fields: v }, { done: 'Posting saved.', optimistic: function () { if (p.id) patch('postings', p.id, v); else tmp('postings', v); } }).catch(function () {});
+    } });
+  if (p.id) $('mDel').onclick = function () {
+    confirmBox('Delete this posting?', esc(p.place) + ' · ' + range(p.startDate, p.endDate) + '. This cannot be undone.', 'Delete', function () {
+      run('posting.delete', { id: p.id }, { done: 'Posting deleted.', optimistic: function () { S.d.postings = S.d.postings.filter(function (x) { return x.id !== p.id; }); } }).catch(function () {});
+    }, true);
+  };
+}
+
+function milestoneForm(sid, m) {
+  m = m || {};
+  var orders = of('milestones', sid).map(function (x) { return +x.order || 0; });
+  form({ title: (m.id ? 'Edit milestone · ' : 'Add milestone · ') + stuName(sid),
+    fields: [
+      { name: 'name', label: 'Milestone', value: m.name, required: true, max: 120 },
+      { name: 'order', label: 'Order', type: 'number', value: m.order || Math.max.apply(null, [0].concat(orders)) + 1 },
+      { name: 'status', label: 'Status', type: 'select', options: ['Not started', 'In progress', 'Submitted', 'Verified', 'Needs revision'], value: m.status || 'Not started' },
+      { name: 'targetDate', label: 'Target date', type: 'date', value: m.targetDate },
+      { name: 'note', label: 'Student note', type: 'textarea', value: m.note }, { name: 'supervisorNote', label: 'Supervisor note', type: 'textarea', value: m.supervisorNote }
+    ],
+    extraBtn: m.id ? '<button type="button" class="btn bad" id="mDel">Delete</button>' : '',
+    onSubmit: function (v) {
+      v.studentId = sid;
+      run('milestone.save', { id: m.id || '', fields: v }, { done: 'Milestone saved.', optimistic: function () { if (m.id) patch('milestones', m.id, v); else tmp('milestones', v); } }).catch(function () {});
+    } });
+  if (m.id) $('mDel').onclick = function () {
+    confirmBox('Delete this milestone?', esc(m.name) + '. This cannot be undone.', 'Delete', function () {
+      run('milestone.delete', { id: m.id }, { done: 'Milestone deleted.', optimistic: function () { S.d.milestones = S.d.milestones.filter(function (x) { return x.id !== m.id; }); } }).catch(function () {});
+    }, true);
+  };
+}
+
+function supervisorForm(s) {
+  s = s || {};
+  form({ title: s.id ? 'Edit ' + s.name : 'Add supervisor',
+    fields: [
+      { name: 'name', label: 'Full name', value: s.name, required: true, max: 120 },
+      { name: 'nsr', label: 'NSR number (used to sign in)', value: s.nsr, max: 20 },
+      { name: 'mmc', label: 'MMC number', value: s.mmc, max: 20 },
+      { name: 'email', label: 'Email', type: 'email', value: s.email, max: 120 }, { name: 'phone', label: 'Phone', type: 'tel', value: s.phone, max: 40 },
+      { name: 'active', label: 'Active (can sign in)', type: 'checkbox', value: s.id ? s.active !== false : true }
+    ],
+    onSubmit: function (v) {
+      run('supervisor.save', { id: s.id || '', fields: v }, { done: 'Supervisor saved.', optimistic: function () { if (s.id) patch('supervisors', s.id, v); else tmp('supervisors', v); } }).catch(function () {});
+    } });
+}
+
+/* ========================================================= EVENT WIRING */
+
+document.addEventListener('click', function (e) {
+  if (!S.d) return;
+  var a = e.target.closest('[data-act]');
+  if (a && $('app').contains(a) || a && $('modalRoot').contains(a)) {
+    var fn = A[a.getAttribute('data-act')];
+    if (fn) { e.preventDefault(); fn(a.getAttribute('data-id'), a); return; }
+  }
+  var g = e.target.closest('[data-go]');
+  if (g && !e.target.closest('a')) { e.preventDefault(); go(g.getAttribute('data-go')); }
+});
+document.addEventListener('input', function (e) {
+  if (!S.d) return;
+  if (e.target.id === 'aq') { S.ui.q = e.target.value; render(); }
+  if (e.target.id === 'sq') { S.ui.sq = e.target.value; render(); }
+});
+document.addEventListener('change', function (e) {
+  if (!S.d) return;
+  var k = e.target.getAttribute('data-filter');
+  if (k) { S.ui.f[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; delete S.ui.f.soon; delete S.ui.f.noEmail; render(); }
+  if (e.target.getAttribute('data-act-change') === 'planUni') { S.ui.planUni = e.target.value; render(); }
+});
+
+/* Refresh quietly when the tab comes back after a while, so data from other users shows up. */
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState !== 'visible' || !S.token || !S.d || S.busy || MODAL) return;
+  if (Date.now() - S.loadedAt < 5 * 60 * 1000) return;
+  backgroundRefresh();
+});
+function backgroundRefresh() {
+  var tok = S.token;
+  busy(1);
+  return api('bootstrap', tok).then(function (d) { if (S.token === tok) { setData(d); render(); } }, function () {}).finally(function () { busy(-1); });
+}
+
+/* ================================================================= START */
+
+(function start() {
+  if (/PASTE_WEB_APP_URL_HERE/.test(API_URL)) {
+    document.body.innerHTML = '<div class="login"><div class="card" style="max-width:520px"><h2>Setup needed</h2><p>Open <b>index.html</b> and paste your Apps Script web app URL into <span class="mono">API_URL</span> near the top.</p></div></div>';
+    return;
+  }
+  var tok = null, snap = null;
+  try { tok = sessionStorage.getItem(TOKEN_KEY); snap = JSON.parse(sessionStorage.getItem(SNAP_KEY) || 'null'); } catch (e) {}
+  if (tok && snap && snap.me) {
+    // Show the last data instantly, then refresh in the background.
+    S.token = tok; setData(snap); enterApp(); backgroundRefresh();
+  } else showLogin();
+})();
+</script>
+</body>
+</html>
