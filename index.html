@@ -156,6 +156,8 @@ label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px
 .list .main { flex: 1; min-width: 0; }
 .list .t { font-weight: 600; }
 .list .d { font-size: 13px; color: var(--muted); }
+/* A long "Needs monitoring" list scrolls inside its card instead of stretching the page. */
+.list.watch { max-height: 520px; overflow-y: auto; padding-right: 6px; }
 .kv { display: grid; grid-template-columns: 170px 1fr; gap: 8px 16px; font-size: 14px; margin: 0; }
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; word-break: break-word; }
@@ -1473,15 +1475,17 @@ VIEWS.Admin.dashboard = function () {
   var watch = all.map(function (s) { var rv = reviewIn(s.id, per); return { s: s, rv: rv, w: worst(rv) }; })
     .filter(function (x) { return x.w === 'red' || x.w === 'amber'; })
     .sort(function (a, b) { return (a.w === 'red' ? 0 : 1) - (b.w === 'red' ? 0 : 1) || a.s.name.localeCompare(b.s.name); });
-  var reviewRow = !scheme().length ? '' : '<div class="grid g3" style="margin-bottom:14px"><div class="span2">' +
+  // Two separate cards: each sits in its own column below, so a long "Needs monitoring" list never leaves a gap beside it.
+  var reviewMain = !scheme().length ? '' :
     card('Progress review <span class="badge acc">' + esc(per) + '</span>' + (samples(per).length ? '<span class="badge warn">Includes ' + samples(per).length + ' sample</span>' : ''),
       '<p class="small muted" style="margin:0 0 12px">' + ratedN + ' of ' + all.length + ' active students rated for this period</p>' +
-      reviewBars(all, per) + '<div style="margin-top:14px">' + lampLegend() + '</div>', '<a class="btn sm" href="#/report">Open report</a>') + '</div>' +
-    card('Needs monitoring <span class="badge">' + watch.length + '</span>', watch.length ? '<ul class="list">' + watch.map(function (x) {
+      reviewBars(all, per) + '<div style="margin-top:14px">' + lampLegend() + '</div>', '<a class="btn sm" href="#/report">Open report</a>');
+  var watchCard = !scheme().length ? '' :
+    card('Needs monitoring <span class="badge">' + watch.length + '</span>', watch.length ? '<ul class="list watch">' + watch.map(function (x) {
       var items = scheme().filter(function (f) { var c = rateColor(f, x.rv[f.key]); return c === 'red' || c === 'amber'; })
         .map(function (f) { return f.label + ': ' + x.rv[f.key]; }).join(' · ');
       return '<li data-go="student/' + esc(x.s.id) + '" style="cursor:pointer"><span style="padding-top:5px">' + lamp(x.w) + '</span><div class="main"><div class="t">' + esc(x.s.name) + ' ' + sampleBadge(x.rv) + '</div><div class="d">' + esc(items) + '</div></div></li>';
-    }).join('') + '</ul>' : '<p class="muted small" style="margin:0">' + (ratedN ? 'No amber or red ratings this period.' : 'No ratings recorded for this period yet.') + '</p>') + '</div>';
+    }).join('') + '</ul>' : '<p class="muted small" style="margin:0">' + (ratedN ? 'No amber or red ratings this period.' : 'No ratings recorded for this period yet.') + '</p>');
   var since = Math.round((Date.now() - S.loadedAt) / 60000);
   return '<div class="page-h"><div><h1>Dashboard</h1><div class="sub">' + esc(set_().DEPARTMENT_NAME || '') + '</div></div><span class="spacer"></span>' +
     '<span class="small faint">Data loaded ' + (since < 1 ? 'just now' : since + ' min ago') + '</span><button class="btn sm" data-act="reload">Reload from Sheet</button></div>' +
@@ -1495,12 +1499,12 @@ VIEWS.Admin.dashboard = function () {
       card('Trainee cohort', cohortDonut(all)) +
       '<div class="span2 stack">' + card('University distribution', uniTiles(all)) +
         card('Training year distribution', '<p class="small muted" style="margin:0 0 10px">Number of trainees in each year of training</p>' + yearBars(all)) + '</div>' +
-    '</div>' + reviewRow + '<div class="grid g3">' +
-      '<div class="span2">' + card('Postings ending soon', soon.length ? '<div class="tbl-wrap"><table><thead><tr><th>Student</th><th>Place</th><th>Ends</th><th>Left</th><th>Next</th></tr></thead><tbody>' + soon.map(function (x) {
+    '</div><div class="grid g3" style="align-items:start">' +
+      '<div class="span2 stack">' + reviewMain + card('Postings ending soon', soon.length ? '<div class="tbl-wrap"><table><thead><tr><th>Student</th><th>Place</th><th>Ends</th><th>Left</th><th>Next</th></tr></thead><tbody>' + soon.map(function (x) {
         var np = nextPosting(x.s.id);
         return '<tr class="click" data-go="student/' + esc(x.s.id) + '"><td class="name">' + esc(x.s.name) + '</td><td>' + esc(postLabel(x.p)) + '</td><td class="nowrap">' + fd(x.p.endDate) + '</td><td class="mono">' + x.left + 'd</td><td class="small">' + (np ? esc(postLabel(np)) + ' · ' + fd(np.startDate) : '<span class="badge warn">None planned</span>') + '</td></tr>';
       }).join('') + '</tbody></table></div>' : empty('No postings end in the next ' + soonDays + ' days.')) + '</div>' +
-      '<div class="stack">' + card('By status', bars(count(function (s) { return s.status; }), 'status')) +
+      '<div class="stack">' + watchCard + card('By status', bars(count(function (s) { return s.status; }), 'status')) +
       card('Department load', capRows.length ? '<ul class="list">' + capRows.join('') + '</ul>' : '<p class="muted small" style="margin:0">Set DEPT_CAPACITY in Settings, e.g. ED:6|ISO1:5</p>') + '</div>' +
     '</div>';
 };
