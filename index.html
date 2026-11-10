@@ -179,6 +179,42 @@ label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px
 .hero .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 
 /* bars chart */
+/* ---------- overall programme: cohort donut, university tiles, year bars ----------
+   Chart colours were checked with the dataviz palette validator on the white card (colour-blind separation,
+   lightness band, chroma). Slots 1-5 are programmes in the order of the PROGRAMS setting; 0 is "other / not set".
+   They are chart-only: green, amber and red stay reserved for the progress ratings. */
+:root { --viz-1: #1d5fae; --viz-2: #5aa9f0; --viz-3: #eb6834; --viz-4: #1baf7a; --viz-5: #eda100; --viz-0: #9aa5b1; }
+.donut { display: flex; flex-direction: column; align-items: center; gap: 18px; padding-top: 8px; }
+.donut svg { width: 240px; max-width: 100%; height: auto; display: block; }
+.donut .dn { font: 600 44px var(--mono); fill: var(--text); }
+.donut .dl { font-size: 12.5px; fill: var(--muted); }
+.dlegs { display: grid; gap: 4px; width: 100%; }
+.dleg { display: grid; grid-template-columns: 12px 1fr auto 44px; gap: 10px; align-items: center; width: 100%; background: none; border: 0; padding: 6px 8px; border-radius: var(--r-sm); font-size: 14px; color: var(--text); text-align: left; }
+button.dleg { cursor: pointer; } button.dleg:hover { background: var(--surface-2); }
+.dleg i { width: 12px; height: 12px; border-radius: 3px; }
+.dleg .n { font: 600 15px var(--mono); }
+.dleg .pc { font: 12.5px var(--mono); color: var(--faint); text-align: right; }
+.utiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 10px; }
+.utile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); text-align: center; color: var(--text); }
+button.utile { cursor: pointer; transition: border-color .15s; } button.utile:hover { border-color: var(--viz-1); }
+.utile .ic { align-self: flex-start; width: 30px; height: 30px; border-radius: 8px; background: var(--info-soft); color: var(--viz-1); display: grid; place-items: center; }
+.utile .ic svg { width: 18px; height: 18px; }
+.utile b { font: 600 30px/1.1 var(--mono); }
+.utile .nm { font-size: 12.5px; color: var(--muted); line-height: 1.3; }
+.ychart { display: grid; grid-template-columns: 24px 1fr; column-gap: 8px; --head: 22px; }
+.yaxis, .yplot { position: relative; height: 176px; }
+.yaxis span { position: absolute; right: 0; transform: translateY(50%); font: 11.5px var(--mono); color: var(--faint); }
+.yplot .yg { position: absolute; left: 0; right: 0; height: 1px; background: var(--line); }
+.yplot .yg.base { background: var(--line-2); }
+.ycols { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: space-around; gap: 10px; padding: 0 8px; }
+.ycol { flex: 1 1 0; max-width: 76px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; background: none; border: 0; padding: 0; cursor: pointer; color: var(--text); }
+.ycol .n { font: 600 13px var(--mono); margin-bottom: 4px; }
+.ycol .b { width: 100%; height: calc((100% - var(--head)) * var(--h)); background: var(--viz-2); border-radius: 4px 4px 0 0; }
+.ycol.final .b { background: var(--viz-1); } .ycol.other .b { background: var(--viz-0); }
+.ycol:hover .b { filter: brightness(.92); }
+.yx { grid-column: 2; display: flex; justify-content: space-around; gap: 10px; padding: 6px 8px 0; font-size: 12.5px; color: var(--muted); }
+.yx span { flex: 1 1 0; max-width: 76px; text-align: center; }
+
 .hbars { display: grid; gap: 7px; }
 .hbar { display: grid; grid-template-columns: 120px 1fr 34px; gap: 10px; align-items: center; font-size: 13px; background: none; border: 0; padding: 2px 0; text-align: left; cursor: pointer; color: var(--text); }
 .hbar:hover .n { color: var(--accent); }
@@ -572,6 +608,7 @@ function svgIcon(name) {
     chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
     gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
     log: 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h4',
+    uni: 'M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18',
     slides: 'M3 4h18v12H3zM12 16v4M8 20h8M7 12V9M12 12V7M17 12v-2',
     id: 'M3 5h18v14H3zM8 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5 16a3 3 0 0 1 6 0M14 9h4M14 13h4'
   }[name] || '';
@@ -692,6 +729,79 @@ function tile(k, v, s, cls, act) {
 }
 function empty(msg) { return '<div class="empty">' + esc(msg) + '</div>'; }
 function card(t, body, extra) { return '<section class="card"><h2>' + t + (extra ? '<span class="spacer"></span>' + extra : '') + '</h2>' + body + '</section>'; }
+
+/* ---- overall programme: who is in training, from which university, in which year ---- */
+
+var PROGRAM_LABEL = { 'MASTER': 'Master in EM', 'PARALLEL PATHWAY': 'FRCEM Pathway' };
+function progLabel(p) { return PROGRAM_LABEL[String(p || '').toUpperCase()] || (p ? title(p) : 'Not set'); }
+var UNI_NAME = { UM: 'University of Malaya (UM)', UKM: 'Universiti Kebangsaan Malaysia (UKM)', UITM: 'Universiti Teknologi MARA (UiTM)',
+  USM: 'Universiti Sains Malaysia (USM)', UPM: 'Universiti Putra Malaysia (UPM)', IIUM: 'International Islamic University Malaysia (IIUM)',
+  UIAM: 'International Islamic University Malaysia (IIUM)', UNIMAS: 'Universiti Malaysia Sarawak (UNIMAS)', UNISZA: 'Universiti Sultan Zainal Abidin (UniSZA)' };
+function uniName(u) { return UNI_NAME[String(u || '').toUpperCase()] || u || 'Not set'; }
+/** Counts rows by fn(row): [[key, n], ...] in first-seen order. */
+function tally(rows, fn) {
+  var n = {}, keys = [];
+  rows.forEach(function (r) { var k = String(fn(r) || ''); if (!(k in n)) { n[k] = 0; keys.push(k); } n[k]++; });
+  return keys.map(function (k) { return [k, n[k]]; });
+}
+/** Donut of trainees by programme, the total in the middle. A programme keeps its colour: it follows the PROGRAMS setting order. */
+function cohortDonut(rows) {
+  var total = rows.length, order = list(set_().PROGRAMS);
+  if (!total) return empty('No active students yet.');
+  var parts = tally(rows, function (s) { return s.program; }).map(function (p) {
+    var i = order.indexOf(p[0]);
+    return { key: p[0], n: p[1], slot: i > -1 && i < 5 ? i + 1 : 0 };
+  }).sort(function (a, b) { return (a.slot || 99) - (b.slot || 99) || b.n - a.n; });
+  var R = 70, C = 2 * Math.PI * R, gap = parts.length > 1 ? 2 : 0, at = 0;
+  var arcs = parts.map(function (p) {
+    var len = p.n / total * C;
+    var arc = '<circle cx="100" cy="100" r="' + R + '" fill="none" stroke="var(--viz-' + p.slot + ')" stroke-width="34" stroke-dasharray="' + Math.max(len - gap, 0.5).toFixed(2) + ' ' + C.toFixed(2) +
+      '" stroke-dashoffset="' + (-at).toFixed(2) + '"><title>' + esc(progLabel(p.key) + ': ' + p.n + ' of ' + total) + '</title></circle>';
+    at += len;
+    return arc;
+  }).join('');
+  var legend = parts.map(function (p) {
+    var tag = p.key ? 'button type="button" data-act="dashFilter" data-k="program" data-v="' + esc(p.key) + '" title="Show these students"' : 'div';
+    return '<' + tag + ' class="dleg"><i style="background:var(--viz-' + p.slot + ')"></i><span class="lab">' + esc(progLabel(p.key)) + '</span><span class="n">' + p.n + '</span><span class="pc">' + Math.round(p.n * 100 / total) + '%</span></' + (p.key ? 'button' : 'div') + '>';
+  }).join('');
+  return '<div class="donut"><svg viewBox="0 0 200 200" role="img" aria-label="' + esc(total + ' trainees: ' + parts.map(function (p) { return progLabel(p.key) + ' ' + p.n; }).join(', ')) + '">' +
+    '<g transform="rotate(-90 100 100)">' + arcs + '</g><text id="cohortTotal" class="dn" x="100" y="96" text-anchor="middle" dominant-baseline="central">' + total + '</text>' +
+    '<text class="dl" x="100" y="128" text-anchor="middle">trainees</text></svg><div class="dlegs">' + legend + '</div></div>';
+}
+/** One tile per university (FRCEM trainees are recorded with "FRCEM" as their university). */
+function uniTiles(rows) {
+  if (!rows.length) return empty('No active students yet.');
+  var parts = tally(rows, function (s) { return s.university; }).sort(function (a, b) { return b[1] - a[1] || a[0].localeCompare(b[0]); });
+  return '<div class="utiles">' + parts.map(function (p) {
+    var tag = p[0] ? 'button type="button" data-act="dashFilter" data-k="university" data-v="' + esc(p[0]) + '" title="Show these students"' : 'div';
+    return '<' + tag + ' class="utile"><span class="ic">' + svgIcon(p[0].toUpperCase() === 'FRCEM' ? 'log' : 'uni') + '</span><b>' + p[1] + '</b><span class="nm">' + esc(uniName(p[0])) + '</span></' + (p[0] ? 'button' : 'div') + '>';
+  }).join('') + '</div>';
+}
+/** Column chart of trainees by year of training. Year 4 and above (final year) is the darker blue; a stage or no year is grey. */
+function yearBars(rows) {
+  if (!rows.length) return empty('No active students yet.');
+  var parts = tally(rows, yearLabel).map(function (p) { var m = /^Year (\d+)$/.exec(p[0]); return { key: p[0], n: p[1], yr: m ? +m[1] : 0 }; });
+  var maxYr = Math.max.apply(null, parts.map(function (p) { return p.yr; }).concat([4]));
+  for (var y = 1; y <= maxYr; y++) if (!parts.some(function (p) { return p.yr === y; })) parts.push({ key: 'Year ' + y, n: 0, yr: y });   // no holes in the axis
+  parts.sort(function (a, b) { return (a.yr || 99) - (b.yr || 99) || a.key.localeCompare(b.key); });
+  var max = Math.max.apply(null, parts.map(function (p) { return p.n; }));
+  var step = max <= 5 ? 1 : max <= 10 ? 2 : max <= 25 ? 5 : 10, top = Math.max(step, Math.ceil(max / step) * step), ticks = [];
+  for (var t = 0; t <= top; t += step) ticks.push(t);
+  var at = function (v) { return 'calc((100% - var(--head)) * ' + (v / top).toFixed(4) + ')'; };
+  var name = function (p) { return p.key === '—' ? 'Not set' : p.key; };
+  var cols = parts.map(function (p) {
+    var act = p.n && p.key !== '—' ? ' data-act="dashFilter" data-k="year" data-v="' + esc(p.key) + '"' : '';
+    return '<button type="button" class="ycol' + (p.yr >= 4 ? ' final' : p.yr ? '' : ' other') + '"' + act + ' title="' + esc(name(p) + ': ' + plural(p.n, 'trainee')) + '">' +
+      '<span class="n">' + p.n + '</span><span class="b" style="--h:' + (p.n / top).toFixed(4) + '"></span></button>';
+  }).join('');
+  var hasOther = parts.some(function (p) { return !p.yr; });
+  return '<div class="ychart" role="img" aria-label="' + esc('Trainees by year of training: ' + parts.map(function (p) { return name(p) + ' ' + p.n; }).join(', ')) + '">' +
+    '<div class="yaxis">' + ticks.map(function (v) { return '<span style="bottom:' + at(v) + '">' + v + '</span>'; }).join('') + '</div>' +
+    '<div class="yplot">' + ticks.map(function (v) { return '<i class="yg' + (v ? '' : ' base') + '" style="bottom:' + at(v) + '"></i>'; }).join('') + '<div class="ycols">' + cols + '</div></div>' +
+    '<div class="yx">' + parts.map(function (p) { return '<span>' + esc(name(p)) + '</span>'; }).join('') + '</div></div>' +
+    '<div class="legend" style="margin-top:12px"><span><i style="background:var(--viz-2)"></i>Year 1 to 3</span><span><i style="background:var(--viz-1)"></i>Final year (Year 4 and above)</span>' +
+    (hasOther ? '<span><i style="background:var(--viz-0)"></i>Stage or year not set</span>' : '') + '</div>';
+}
 
 /* ---- progress review ---- */
 
@@ -1377,15 +1487,16 @@ VIEWS.Admin.dashboard = function () {
       tile('Red flags', red.length, 'overdue or past end date', red.length ? 'bad' : 'ok', 'data-act="dashFilter" data-k="risk" data-v="red"') +
       tile('No sign-in yet', all.filter(function (s) { return !s.email; }).length, 'students without email', '', 'data-act="dashFilter" data-k="noEmail"') +
     '</div><div class="grid g3" style="margin-bottom:14px">' +
-      card('By status', bars(count(function (s) { return s.status; }), 'status')) +
-      card('By university', bars(count(function (s) { return s.university; }), 'university')) +
-      card('By year / stage', bars(count(yearLabel), 'year')) +
+      card('Trainee cohort', cohortDonut(all)) +
+      '<div class="span2 stack">' + card('University distribution', uniTiles(all)) +
+        card('Training year distribution', '<p class="small muted" style="margin:0 0 10px">Number of trainees in each year of training</p>' + yearBars(all)) + '</div>' +
     '</div>' + reviewRow + '<div class="grid g3">' +
       '<div class="span2">' + card('Postings ending soon', soon.length ? '<div class="tbl-wrap"><table><thead><tr><th>Student</th><th>Place</th><th>Ends</th><th>Left</th><th>Next</th></tr></thead><tbody>' + soon.map(function (x) {
         var np = nextPosting(x.s.id);
         return '<tr class="click" data-go="student/' + esc(x.s.id) + '"><td class="name">' + esc(x.s.name) + '</td><td>' + esc(postLabel(x.p)) + '</td><td class="nowrap">' + fd(x.p.endDate) + '</td><td class="mono">' + x.left + 'd</td><td class="small">' + (np ? esc(postLabel(np)) + ' · ' + fd(np.startDate) : '<span class="badge warn">None planned</span>') + '</td></tr>';
       }).join('') + '</tbody></table></div>' : empty('No postings end in the next ' + soonDays + ' days.')) + '</div>' +
-      card('Department load', capRows.length ? '<ul class="list">' + capRows.join('') + '</ul>' : '<p class="muted small" style="margin:0">Set DEPT_CAPACITY in Settings, e.g. ED:6|ISO1:5</p>') +
+      '<div class="stack">' + card('By status', bars(count(function (s) { return s.status; }), 'status')) +
+      card('Department load', capRows.length ? '<ul class="list">' + capRows.join('') + '</ul>' : '<p class="muted small" style="margin:0">Set DEPT_CAPACITY in Settings, e.g. ED:6|ISO1:5</p>') + '</div>' +
     '</div>';
 };
 
@@ -1396,6 +1507,7 @@ function adminFilterRows() {
     if (f.archived && !s.archived) return false;
     if (f.status && s.status !== f.status) return false;
     if (f.university && s.university !== f.university) return false;
+    if (f.program && s.program !== f.program) return false;
     if (f.year && yearLabel(s) !== f.year) return false;
     if (f.supervisor && s.supervisorId !== f.supervisor) return false;
     if (f.risk && risk(s.id).level !== f.risk) return false;
@@ -1419,6 +1531,7 @@ VIEWS.Admin.students = function () {
   var chips = [];
   if (f.soon) chips.push('Posting ending soon');
   if (f.noEmail) chips.push('No email');
+  if (f.program) chips.push('Programme: ' + progLabel(f.program));
   return '<div class="page-h"><div><h1>Students</h1><div class="sub">' + plural(rows.length, 'student') + ' shown</div></div><span class="spacer"></span>' +
     '<button class="btn" data-act="exportCsv">Export CSV</button><button class="btn pri" data-act="stuNew">Add student</button></div>' +
     '<div class="toolbar"><input class="input search" id="aq" placeholder="Search name, MMC, email, department" value="' + esc(S.ui.q) + '">' +
