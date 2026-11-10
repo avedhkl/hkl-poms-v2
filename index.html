@@ -286,6 +286,13 @@ label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px
 .seg button { border: 0; background: none; padding: 8px; border-radius: 8px; font-weight: 600; color: var(--muted); cursor: pointer; }
 .seg button.on { background: var(--surface); color: var(--accent); box-shadow: var(--shadow); }
 .login .card .form { gap: 14px; }
+/* Name suggestions on the sign-in box: our own list, because the browser's built-in one often fails to open. */
+.ac { position: relative; }
+.ac-list { position: absolute; z-index: 20; left: 0; right: 0; top: 100%; margin: 4px 0 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--line-2);
+  border-radius: var(--r-sm); box-shadow: 0 8px 24px rgba(16, 32, 48, .16); max-height: 232px; overflow-y: auto; overscroll-behavior: contain; }
+.ac-list li { padding: 9px 10px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+.ac-list li.on, .ac-list li:hover { background: var(--accent-soft); color: var(--accent); }
+.ac-list li.none { color: var(--muted); cursor: default; background: none; }
 .login .note { font-size: 12.5px; color: var(--faint); text-align: center; margin-top: 14px; }
 
 /* skeleton */
@@ -339,9 +346,9 @@ label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px
         <button type="button" data-role="Admin">Admin</button>
       </div>
       <form id="lForm" class="form" autocomplete="on">
-        <label class="field" id="lNameF"><span>Your name</span>
-          <input class="input" id="lName" list="lNames" autocomplete="off" placeholder="Loading names…" required></label>
-        <datalist id="lNames"></datalist>
+        <div class="field ac" id="lNameF"><span><label for="lName">Your name</label></span>
+          <input class="input" id="lName" autocomplete="off" autocapitalize="characters" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="lList" placeholder="Loading names…" required>
+          <ul id="lList" class="ac-list hidden" role="listbox" aria-label="Names"></ul></div>
         <label class="field"><span id="lSecretL">Registered email</span>
           <input class="input" id="lSecret" type="email" required></label>
         <div id="lHint" class="hint small muted"></div>
@@ -857,9 +864,8 @@ function setLoginRole(role) {
   var isAdm = role === 'Admin';
   $('lNameF').classList.toggle('hidden', isAdm);
   $('lName').required = !isAdm;
-  var names = LOGIN.opts ? (role === 'Student' ? LOGIN.opts.students : LOGIN.opts.supervisors) : [];
-  $('lNames').innerHTML = (names || []).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
   $('lName').placeholder = LOGIN.opts ? 'Start typing your name' : 'Loading names…';
+  acShow();
   var sec = $('lSecret');
   sec.value = '';
   if (role === 'Student') { $('lSecretL').textContent = 'Registered email'; sec.type = 'email'; sec.autocomplete = 'email'; $('lHint').textContent = 'Use the email the department has on file for you.'; }
@@ -869,16 +875,80 @@ function setLoginRole(role) {
 document.querySelectorAll('.seg button').forEach(function (b) {
   b.addEventListener('click', function () { $('lErr').classList.add('hidden'); setLoginRole(b.getAttribute('data-role')); });
 });
+
+/* ---- name suggestions: opens when the name box is tapped, narrows as you type ---- */
+var AC = { rows: [], idx: -1 };
+function loginNames() { return (LOGIN.opts && (LOGIN.role === 'Student' ? LOGIN.opts.students : LOGIN.opts.supervisors)) || []; }
+/** Names containing every word typed, in any order ("alzamani", "nur aina"). */
+function nameMatches(q) {
+  var typed = String(q).toUpperCase().trim(), words = typed.split(/\s+/).filter(Boolean);
+  var rank = function (n) { var u = n.toUpperCase(); return u === typed ? 0 : u.indexOf(typed) === 0 ? 1 : 2; };   // exact, then starts-with, then the rest
+  return loginNames().filter(function (n) { var u = n.toUpperCase(); return words.every(function (w) { return u.indexOf(w) > -1; }); })
+    .map(function (n, i) { return [rank(n), i, n]; }).sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; }).map(function (x) { return x[2]; });
+}
+function acHide() { $('lList').classList.add('hidden'); $('lName').setAttribute('aria-expanded', 'false'); $('lName').removeAttribute('aria-activedescendant'); AC.idx = -1; }
+function acMark(i) {
+  AC.idx = i;
+  var items = $('lList').querySelectorAll('li[data-i]');
+  for (var k = 0; k < items.length; k++) { items[k].classList.toggle('on', k === i); items[k].setAttribute('aria-selected', k === i ? 'true' : 'false'); }
+  if (i >= 0 && items[i]) { $('lName').setAttribute('aria-activedescendant', items[i].id); items[i].scrollIntoView({ block: 'nearest' }); }
+  else $('lName').removeAttribute('aria-activedescendant');
+}
+function acShow() {
+  var inp = $('lName'), box = $('lList');
+  if (!LOGIN.opts || LOGIN.role === 'Admin' || document.activeElement !== inp) { acHide(); return; }
+  var q = inp.value.trim();
+  AC.rows = nameMatches(q);
+  if (AC.rows.length === 1 && AC.rows[0].toUpperCase() === q.toUpperCase()) { acHide(); return; }   // already chosen
+  box.innerHTML = AC.rows.length ? AC.rows.map(function (n, i) { return '<li role="option" id="lOpt' + i + '" data-i="' + i + '">' + esc(n) + '</li>'; }).join('')
+    : '<li class="none">No name matches. Check that “' + esc(LOGIN.role) + '” above is the right choice, or ask the department admin.</li>';
+  box.classList.remove('hidden'); box.scrollTop = 0;
+  inp.setAttribute('aria-expanded', 'true');
+  acMark(q && AC.rows.length ? 0 : -1);
+}
+function acPick(name) {
+  $('lName').value = name;
+  $('lErr').classList.add('hidden');
+  acHide();
+  $('lSecret').focus();
+}
+(function () {
+  var inp = $('lName'), box = $('lList');
+  inp.addEventListener('focus', acShow);
+  inp.addEventListener('click', function () { if (box.classList.contains('hidden')) acShow(); });
+  inp.addEventListener('input', acShow);
+  inp.addEventListener('blur', function () { setTimeout(function () { if (document.activeElement !== inp) acHide(); }, 150); });
+  inp.addEventListener('keydown', function (e) {
+    var open = !box.classList.contains('hidden');
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) { acShow(); return; }
+      if (!AC.rows.length) return;
+      var n = AC.rows.length, step = e.key === 'ArrowDown' ? 1 : -1;
+      acMark(AC.idx < 0 ? (step > 0 ? 0 : n - 1) : (AC.idx + step + n) % n);
+    } else if (e.key === 'Enter' && open && AC.idx >= 0) { e.preventDefault(); acPick(AC.rows[AC.idx]); }
+    else if (e.key === 'Escape' && open) { e.stopPropagation(); acHide(); }
+  });
+  // Keep the typing focus in the name box while a name is being tapped or the list is scrolled.
+  box.addEventListener('mousedown', function (e) { e.preventDefault(); });
+  box.addEventListener('click', function (e) {
+    var li = e.target.closest('li[data-i]');
+    if (li) acPick(AC.rows[+li.getAttribute('data-i')]);
+  });
+})();
 $('lForm').addEventListener('submit', function (e) {
   e.preventDefault();
   var btn = $('lBtn'), err = $('lErr');
   err.classList.add('hidden');
   var name = $('lName').value.trim(), secret = $('lSecret').value.trim();
   if (LOGIN.role !== 'Admin') {
-    var names = LOGIN.opts ? (LOGIN.role === 'Student' ? LOGIN.opts.students : LOGIN.opts.supervisors) : null;
+    var names = LOGIN.opts ? loginNames() : null;
     var match = names && names.filter(function (n) { return n.toUpperCase() === name.toUpperCase(); })[0];
+    // Part of a name is enough when it points to exactly one person.
+    if (names && !match && name) { var near = nameMatches(name); if (near.length === 1) match = near[0]; }
     if (names && !match) { err.textContent = 'Please pick your name from the suggestions as you type.'; err.classList.remove('hidden'); return; }
-    if (match) name = match;
+    if (match) { name = match; $('lName').value = match; }
+    acHide();
   }
   if (!secret) { err.textContent = 'Please fill in ' + $('lSecretL').textContent.toLowerCase() + '.'; err.classList.remove('hidden'); return; }
   btn.disabled = true; btn.textContent = 'Signing in…';
