@@ -282,6 +282,7 @@ button.utile { cursor: pointer; transition: border-color .15s; } button.utile:ho
 @media (max-width: 900px) { .slide .cols { grid-template-columns: 1fr; } }
 .slide .kv { grid-template-columns: 150px 1fr; }
 .slide .sup { text-align: right; font-size: 13px; }
+.slide .card { box-shadow: none; }
 @page { size: A4 landscape; margin: 10mm; }
 
 /* ---------- modal ---------- */
@@ -363,6 +364,8 @@ button.utile { cursor: pointer; transition: border-color .15s; } button.utile:ho
   /* Keep the wide layout on paper even if the browser reports a narrow page. */
   .report .g4, .report .rv-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .report .cols { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  .report .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .report .span2 { grid-column: span 2; }
 }
 </style>
 </head>
@@ -1612,7 +1615,7 @@ VIEWS.Admin.settings = function () {
     }).join('') + '</ul>' : empty('None yet. Leave days skip these dates.')), '<button class="btn sm" data-act="holNew">Add</button>') + '</div>';
 };
 
-/** Meeting slides built from the ratings: cover, summary, supervisor list, then one slide per trainee. */
+/** Meeting slides: cover, overall programme charts, ratings summary, supervisor list, then one slide per trainee. */
 VIEWS.Admin.report = function () {
   var ui = S.ui.rep, cur = period();
   var periods = {}; periods[cur] = 1;
@@ -1631,6 +1634,11 @@ VIEWS.Admin.report = function () {
     '<div class="lead">' + esc(set.SYSTEM_NAME || 'HKL-PoMS') + '</div><div class="meta hero"><span class="badge acc">' + esc(per) + '</span>' +
     '<span class="badge">Prepared ' + fd(today()) + '</span><span class="badge">' + plural(shown.length, 'trainee') + ' · ' + plural(order.filter(Boolean).length, 'supervisor') + '</span>' +
     (nSample ? '<span class="badge warn">Includes ' + plural(nSample, 'sample rating') + ' (not real)</span>' : '') + '</div></section>';
+
+  // The same three charts as the top of the Dashboard, always over every active trainee.
+  var programme = '<section class="slide prog"><h2>Overall programme</h2><p class="lead">' + plural(active.length, 'active trainee') + ', by programme, university and year of training</p>' +
+    '<div class="grid g3"><div>' + card('Trainee cohort', cohortDonut(active)) + '</div><div class="span2 stack">' + card('University distribution', uniTiles(active)) +
+    card('Training year distribution', '<p class="small muted" style="margin:0 0 10px">Number of trainees in each year of training</p>' + yearBars(active)) + '</div></div></section>';
 
   var summary = '<section class="slide"><h2>Summary</h2><p class="lead">' + rated.length + ' of ' + active.length + ' active trainees rated for ' + esc(per) + '</p>' +
     '<div class="grid g4" style="margin-bottom:18px">' + tile('Trainees', active.length, 'active') + tile('All green', count('green'), 'every rated item on track', 'ok') +
@@ -1670,7 +1678,7 @@ VIEWS.Admin.report = function () {
     '<label class="chk"><input type="checkbox" data-rep="ic"' + (ui.ic ? ' checked' : '') + '> Show IC numbers</label><span class="spacer"></span>' +
     (nSampleAll ? '<button class="btn sm bad" data-act="sampleClear">Remove sample ratings (' + nSampleAll + ')</button>' : '') +
     (per === cur ? '<button class="btn sm" data-act="sampleAdd">Add sample ratings</button>' : '') + '</div>' +
-    (scheme().length ? '<div class="report">' + cover + summary + alloc + slides + '</div>' : card('Report not available yet', '<p class="muted" style="margin:0">The server has not been updated for progress ratings.</p>'));
+    (scheme().length ? '<div class="report">' + cover + programme + summary + alloc + slides + '</div>' : card('Report not available yet', '<p class="muted" style="margin:0">The server has not been updated for progress ratings.</p>'));
 };
 
 var AUDIT = { rows: null, loading: false };
