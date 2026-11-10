@@ -691,6 +691,10 @@ function reviewsOf(sid) {
   return of('reviews', sid).slice().sort(function (a, b) { return String(b.ratedAt || '').localeCompare(String(a.ratedAt || '')); });
 }
 function reviewIn(sid, per) { return of('reviews', sid).filter(function (r) { return r.period === per; })[0] || null; }
+/** Made-up ratings added by the admin for demonstration; always labelled, never shown to students. */
+function isSample(rv) { return !!rv && !!S.d.review && !!S.d.review.sampleRater && rv.ratedBy === S.d.review.sampleRater; }
+function sampleBadge(rv) { return isSample(rv) ? '<span class="badge warn">Sample data</span>' : ''; }
+function samples(per) { return S.d.reviews.filter(function (r) { return isSample(r) && (!per || r.period === per); }); }
 /** The worst colour in a review: red beats amber beats green; 'none' when nothing is rated. */
 function worst(rv) {
   var lvl = { none: 0, green: 1, amber: 2, red: 3 }, w = 'none';
@@ -743,9 +747,10 @@ function reviewCard(sid, canRate) {
       return '<li><div class="main small"><b>' + esc(r.period) + '</b> <span class="faint">· ' + esc(r.ratedBy || '') + '</span></div>' + lamps(r) + '</li>';
     }).join('') + '</ul>';
   } else body += '<p class="muted" style="margin:0">' + (canRate ? 'No rating yet. Use “Rate progress” to record the first one.' : 'Your supervisor has not recorded a rating yet.') + '</p>';
-  return card('Progress review ' + (rv ? '<span class="badge' + (isCur ? ' acc' : '') + '">' + esc(rv.period) + '</span>' : '') +
+  return card('Progress review ' + (rv ? '<span class="badge' + (isCur ? ' acc' : '') + '">' + esc(rv.period) + '</span>' : '') + sampleBadge(rv) +
     (rv && !isCur ? '<span class="badge warn">Not yet rated for ' + esc(cur) + '</span>' : ''), body,
-    canRate ? '<button class="btn sm pri" data-act="rate" data-id="' + esc(sid) + '">' + (isCur ? 'Update rating' : 'Rate progress') + '</button>' : '');
+    canRate ? (rv ? '<button class="btn sm" data-act="rateClear" data-id="' + esc(rv.id) + '">Clear rating</button>' : '') +
+      '<button class="btn sm pri" data-act="rate" data-id="' + esc(sid) + '">' + (isCur ? 'Update rating' : 'Rate progress') + '</button>' : '');
 }
 /** One stacked bar per rating item, counted over the given students for one period. */
 function reviewBars(students, per) {
@@ -1215,12 +1220,13 @@ VIEWS.Admin.dashboard = function () {
     .filter(function (x) { return x.w === 'red' || x.w === 'amber'; })
     .sort(function (a, b) { return (a.w === 'red' ? 0 : 1) - (b.w === 'red' ? 0 : 1) || a.s.name.localeCompare(b.s.name); });
   var reviewRow = !scheme().length ? '' : '<div class="grid g3" style="margin-bottom:14px"><div class="span2">' +
-    card('Progress review <span class="badge acc">' + esc(per) + '</span>', '<p class="small muted" style="margin:0 0 12px">' + ratedN + ' of ' + all.length + ' active students rated for this period</p>' +
+    card('Progress review <span class="badge acc">' + esc(per) + '</span>' + (samples(per).length ? '<span class="badge warn">Includes ' + samples(per).length + ' sample</span>' : ''),
+      '<p class="small muted" style="margin:0 0 12px">' + ratedN + ' of ' + all.length + ' active students rated for this period</p>' +
       reviewBars(all, per) + '<div style="margin-top:14px">' + lampLegend() + '</div>', '<a class="btn sm" href="#/report">Open report</a>') + '</div>' +
     card('Needs monitoring <span class="badge">' + watch.length + '</span>', watch.length ? '<ul class="list">' + watch.map(function (x) {
       var items = scheme().filter(function (f) { var c = rateColor(f, x.rv[f.key]); return c === 'red' || c === 'amber'; })
         .map(function (f) { return f.label + ': ' + x.rv[f.key]; }).join(' · ');
-      return '<li data-go="student/' + esc(x.s.id) + '" style="cursor:pointer"><span style="padding-top:5px">' + lamp(x.w) + '</span><div class="main"><div class="t">' + esc(x.s.name) + '</div><div class="d">' + esc(items) + '</div></div></li>';
+      return '<li data-go="student/' + esc(x.s.id) + '" style="cursor:pointer"><span style="padding-top:5px">' + lamp(x.w) + '</span><div class="main"><div class="t">' + esc(x.s.name) + ' ' + sampleBadge(x.rv) + '</div><div class="d">' + esc(items) + '</div></div></li>';
     }).join('') + '</ul>' : '<p class="muted small" style="margin:0">' + (ratedN ? 'No amber or red ratings this period.' : 'No ratings recorded for this period yet.') + '</p>') + '</div>';
   var since = Math.round((Date.now() - S.loadedAt) / 60000);
   return '<div class="page-h"><div><h1>Dashboard</h1><div class="sub">' + esc(set_().DEPARTMENT_NAME || '') + '</div></div><span class="spacer"></span>' +
@@ -1367,11 +1373,12 @@ VIEWS.Admin.report = function () {
   shown.forEach(function (s) { var k = s.supervisorId || ''; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(s); });
   order.sort(function (a, b) { return (a ? 0 : 1) - (b ? 0 : 1) || supName(a).localeCompare(supName(b)); });
   var count = function (c) { return rated.filter(function (s) { return worst(reviewIn(s.id, per)) === c; }).length; };
-  var set = set_();
+  var set = set_(), nSample = samples(per).length, nSampleAll = samples().length;
 
   var cover = '<section class="slide cover"><div class="muted">' + esc(set.DEPARTMENT_NAME || '') + '</div><h2>Trainee Progress Review</h2>' +
     '<div class="lead">' + esc(set.SYSTEM_NAME || 'HKL-PoMS') + '</div><div class="meta hero"><span class="badge acc">' + esc(per) + '</span>' +
-    '<span class="badge">Prepared ' + fd(today()) + '</span><span class="badge">' + plural(shown.length, 'trainee') + ' · ' + plural(order.filter(Boolean).length, 'supervisor') + '</span></div></section>';
+    '<span class="badge">Prepared ' + fd(today()) + '</span><span class="badge">' + plural(shown.length, 'trainee') + ' · ' + plural(order.filter(Boolean).length, 'supervisor') + '</span>' +
+    (nSample ? '<span class="badge warn">Includes ' + plural(nSample, 'sample rating') + ' (not real)</span>' : '') + '</div></section>';
 
   var summary = '<section class="slide"><h2>Summary</h2><p class="lead">' + rated.length + ' of ' + active.length + ' active trainees rated for ' + esc(per) + '</p>' +
     '<div class="grid g4" style="margin-bottom:18px">' + tile('Trainees', active.length, 'active') + tile('All green', count('green'), 'every rated item on track', 'ok') +
@@ -1393,7 +1400,7 @@ VIEWS.Admin.report = function () {
         ['Reported', fd(s.reportDate)], ['In department', s.reportDate || s.endDate ? fd(s.reportDate) + ' – ' + fd(s.endDate) : ''], ['Status', s.status],
         ['Current posting', cp ? cp.place + ' (' + fd(cp.startDate) + ' – ' + fd(cp.endDate) + ')' : s.dept],
         ['Postings completed', done.join(', ')], ['University supervisor', s.uniSupervisor]]);
-      return '<section class="slide"><div class="hero" style="margin-bottom:18px">' + avatar(s, 'lg') + '<div style="flex:1;min-width:220px"><h2>' + esc(s.name) + '</h2>' +
+      return '<section class="slide"><div class="hero" style="margin-bottom:18px">' + avatar(s, 'lg') + '<div style="flex:1;min-width:220px"><h2>' + esc(s.name) + ' ' + sampleBadge(rv) + '</h2>' +
         '<div class="muted">' + esc([s.program, s.university, yearLabel(s)].filter(Boolean).join(' · ')) + '</div></div>' +
         '<div class="sup"><div class="muted">EDHKL supervisor</div><b>' + esc(k ? supName(k) : 'Not assigned') + '</b></div></div>' +
         '<div class="cols"><div>' + kv(facts) + '</div><div>' + researchHead(s.id) +
@@ -1408,7 +1415,9 @@ VIEWS.Admin.report = function () {
       return '<option' + (p === per ? ' selected' : '') + '>' + esc(p) + '</option>';
     }).join('') + '</select>' +
     '<label class="chk"><input type="checkbox" data-rep="unrated"' + (ui.unrated ? ' checked' : '') + '> Include trainees not yet rated</label>' +
-    '<label class="chk"><input type="checkbox" data-rep="ic"' + (ui.ic ? ' checked' : '') + '> Show IC numbers</label></div>' +
+    '<label class="chk"><input type="checkbox" data-rep="ic"' + (ui.ic ? ' checked' : '') + '> Show IC numbers</label><span class="spacer"></span>' +
+    (nSampleAll ? '<button class="btn sm bad" data-act="sampleClear">Remove sample ratings (' + nSampleAll + ')</button>' : '') +
+    (per === cur ? '<button class="btn sm" data-act="sampleAdd">Add sample ratings</button>' : '') + '</div>' +
     (scheme().length ? '<div class="report">' + cover + summary + alloc + slides + '</div>' : card('Report not available yet', '<p class="muted" style="margin:0">The server has not been updated for progress ratings.</p>'));
 };
 
@@ -1543,8 +1552,28 @@ var A = {
       } });
   },
 
+  rateClear: function (id) {
+    var r = find('reviews', id);
+    if (!r) return;
+    confirmBox('Clear this rating?', 'The ' + esc(r.period) + ' rating for ' + esc(stuName(r.studentId)) + ' will be removed, so the student shows as not rated. Ratings from other periods are kept.', 'Clear rating', function () {
+      run('review.delete', { id: id }, { done: 'Rating cleared.', optimistic: function () { S.d.reviews = S.d.reviews.filter(function (x) { return x.id !== id; }); } }).catch(function () {});
+    }, true);
+  },
+
   /* admin */
   print: function () { window.print(); },
+  sampleAdd: function () {
+    confirmBox('Add sample ratings?', 'Up to 8 active students who have no rating for ' + esc(period()) + ' get made-up ratings, from all green to mostly red, so you can demonstrate the screens and the report. ' +
+      'They are labelled “Sample data”, students cannot see them, and real ratings are never overwritten. Remove them before the real review.', 'Add sample ratings', function () {
+      run('review.sample', {}, { done: 'Sample ratings added.' }).catch(function () {});
+    });
+  },
+  sampleClear: function () {
+    var n = samples().length;
+    confirmBox('Remove sample ratings?', 'All ' + plural(n, 'sample rating') + ' will be removed. Real ratings are not touched.', 'Remove', function () {
+      run('review.sampleClear', {}, { done: 'Sample ratings removed.', optimistic: function () { S.d.reviews = S.d.reviews.filter(function (x) { return !isSample(x); }); } }).catch(function () {});
+    }, true);
+  },
   extDecide: function (id, el) {
     var p = find('postings', id), ok = el.getAttribute('data-v') === 'approve';
     form({ title: (ok ? 'Approve' : 'Reject') + ' extension · ' + stuName(p.studentId), submit: ok ? 'Approve' : 'Reject',
