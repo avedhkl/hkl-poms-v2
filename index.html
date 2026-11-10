@@ -354,6 +354,7 @@ label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px
         <div id="lHint" class="hint small muted"></div>
         <div id="lErr" class="err hidden" role="alert"></div>
         <button class="btn pri" id="lBtn" type="submit">Sign in</button>
+        <button class="btn ghost hidden" id="lReg" type="button">New student? Register here</button>
       </form>
     </div>
     <div class="note">Your session ends when you close this tab or press Log out.</div>
@@ -404,7 +405,7 @@ function api(fn) {
 
 var S = { token: null, me: null, d: null, route: '', loadedAt: 0, ui: { f: {}, sf: {}, q: '', sq: '', rep: { period: '', ic: false, unrated: true } }, busy: 0 };
 var TABLE_KEY = { Students: 'students', Supervisors: 'supervisors', Admins: 'admins', Postings: 'postings',
-                  Leaves: 'leaves', Milestones: 'milestones', Holidays: 'holidays', Reviews: 'reviews' };
+                  Leaves: 'leaves', Milestones: 'milestones', Holidays: 'holidays', Reviews: 'reviews', Registrations: 'registrations' };
 
 function saveSnap() {
   try { sessionStorage.setItem(TOKEN_KEY, S.token); sessionStorage.setItem(SNAP_KEY, JSON.stringify(S.d)); } catch (e) {}
@@ -421,7 +422,7 @@ function setData(d) {
 var IX = {};
 function index() {
   var d = S.d;
-  ['students', 'supervisors', 'postings', 'leaves', 'milestones', 'holidays', 'admins', 'reviews'].forEach(function (k) { d[k] = d[k] || []; });
+  ['students', 'supervisors', 'postings', 'leaves', 'milestones', 'holidays', 'admins', 'reviews', 'registrations'].forEach(function (k) { d[k] = d[k] || []; });
   IX.stu = {}; d.students.forEach(function (s) { IX.stu[s.id] = s; });
   IX.sup = {}; d.supervisors.forEach(function (s) { IX.sup[s.id] = s; });
   IX.by = { postings: {}, leaves: {}, milestones: {}, reviews: {} };
@@ -461,6 +462,8 @@ function run(action, payload, opt) {
   return api('act', S.token, action, payload).then(function (res) {
     merge(res); render();
     if (opt.done) toast(opt.done, 'ok');
+    // Lines the server adds after a save, e.g. whether an email went out.
+    (res.notes || []).forEach(function (n) { toast(n, /could not/.test(n) ? 'bad' : 'ok'); });
     return res;
   }, function (e) {
     S.d = JSON.parse(before); index(); render();
@@ -615,6 +618,20 @@ function leaveSum(sid) {
   out.emergency.left = out.emergency.ent - out.emergency.used;
   return out;
 }
+/** A posting's place, with the HKL rotation when one is recorded: "HKL · Anaesthesiology". */
+function postLabel(p) { return p.dept ? p.place + ' · ' + p.dept : p.place; }
+/** The drop-down for a rotation inside HKL (list from the HKL_ROTATIONS setting) plus "Others: please state". */
+function rotationFields(cur, required) {
+  var opts = list(set_().HKL_ROTATIONS), known = !cur || opts.indexOf(cur) > -1;
+  return [
+    { name: 'deptPick', label: 'HKL posting', type: 'select', required: required, value: cur ? (known ? cur : 'Others') : '',
+      options: [{ value: '', label: required ? '— choose —' : '— not applicable —' }].concat(opts, ['Others']) },
+    { name: 'deptOther', label: 'Others: please state', value: known ? '' : cur, max: 60, when: function (v) { return v.deptPick === 'Others'; } }
+  ];
+}
+function rotationOf(v) { return v.deptPick === 'Others' ? v.deptOther : v.deptPick; }
+function rotationCheck(v) { return v.deptPick === 'Others' && !v.deptOther ? 'Please state the posting.' : ''; }
+
 function pendingFor(sid) {
   var leaves = of('leaves', sid).filter(function (l) { return l.status === 'Pending'; });
   var ms = of('milestones', sid).filter(function (m) { return m.status === 'Submitted'; });
@@ -640,7 +657,7 @@ function risk(sid) {
   var cp = currentPosting(sid);
   if (cp && cp.endDate) {
     var left = daysBetween(t, cp.endDate);
-    if (left <= num('POSTING_ENDING_SOON_DAYS', 60)) bump(1, 'Current posting (' + cp.place + ') ends in ' + plural(left, 'day'));
+    if (left <= num('POSTING_ENDING_SOON_DAYS', 60)) bump(1, 'Current posting (' + postLabel(cp) + ') ends in ' + plural(left, 'day'));
   }
   if (th.total && th.done < th.total) {
     var last = th.ms.map(function (m) { return String(m.updatedAt || '').slice(0, 10); }).sort().pop();
@@ -813,11 +830,16 @@ function form(o) {
     var p = o.preview(values()), pv = $('mPreview');
     pv.classList.toggle('hidden', !p); pv.innerHTML = p || '';
   };
-  var changed = function () { $('mErr').classList.add('hidden'); upd(); };
-  f.addEventListener('input', changed); f.addEventListener('change', changed); upd();
+  // A field with `when` shows only while when(values) is true (e.g. "Others: please state").
+  var gate = function () {
+    var v = values();
+    o.fields.forEach(function (fl) { var el = fl.when && $('f_' + fl.name); if (el) el.closest('label').classList.toggle('hidden', !fl.when(v)); });
+  };
+  var changed = function () { $('mErr').classList.add('hidden'); gate(); upd(); };
+  f.addEventListener('input', changed); f.addEventListener('change', changed); gate(); upd();
   f.addEventListener('submit', function (ev) {
     ev.preventDefault();
-    var v = values(), miss = o.fields.filter(function (fl) { return fl.required && !v[fl.name]; });
+    var v = values(), miss = o.fields.filter(function (fl) { return fl.required && !v[fl.name] && (!fl.when || fl.when(v)); });
     var errBox = $('mErr');
     if (miss.length) { errBox.textContent = 'Please fill in: ' + miss.map(function (m) { return m.label; }).join(', ') + '.'; errBox.classList.remove('hidden'); return; }
     var msg = o.validate && o.validate(v);
@@ -833,6 +855,12 @@ function confirmBox(titleText, body, okLabel, onOk, danger) {
     '<button class="btn ' + (danger ? 'bad' : 'pri') + '" id="mOk" type="button">' + esc(okLabel) + '</button></div></div></div>';
   MODAL = {};
   $('mOk').onclick = function () { closeModal(); onOk(); };
+  $('mOk').focus();
+}
+function infoBox(titleText, body) {
+  $('modalRoot').innerHTML = '<div class="scrim" id="scrim"><div class="modal" role="dialog" aria-modal="true"><div class="modal-h"><h3>' + esc(titleText) + '</h3></div>' +
+    '<div class="modal-b"><p style="margin:0">' + body + '</p></div><div class="modal-f"><button class="btn pri" id="mOk" type="button" data-close>OK</button></div></div></div>';
+  MODAL = {};
   $('mOk').focus();
 }
 document.addEventListener('click', function (e) {
@@ -854,6 +882,7 @@ function showLogin(msg) {
       LOGIN.opts = o;
       if (o.system) $('lTitle').textContent = o.system;
       if (o.department) $('lDept').textContent = o.department;
+      $('lReg').classList.toggle('hidden', !o.register);
       setLoginRole(LOGIN.role);
     }, function (e) { $('lName').placeholder = 'Type your full name'; $('lErr').textContent = e.message; $('lErr').classList.remove('hidden'); });
   }
@@ -875,6 +904,40 @@ function setLoginRole(role) {
 document.querySelectorAll('.seg button').forEach(function (b) {
   b.addEventListener('click', function () { $('lErr').classList.add('hidden'); setLoginRole(b.getAttribute('data-role')); });
 });
+
+/* ---- new student sign-up: sent to the admin, who approves it before the student can sign in ---- */
+function registerForm(prev, problem) {
+  var o = LOGIN.opts || {}, robot = '';
+  prev = prev || {};
+  form({ title: 'Register as a new student', wide: true, submit: 'Send registration',
+    intro: 'For Master\'s students who are new to the department. The admin checks every registration. You will get an email when yours is approved, and only then can you sign in.',
+    fields: [
+      { name: 'name', label: 'Full name (as in your IC)', value: prev.name, required: true, full: true, max: 120 },
+      { name: 'email', label: 'Email', type: 'email', value: prev.email, required: true, max: 120, hint: 'You will sign in with this email.' },
+      { name: 'phone', label: 'Phone', type: 'tel', value: prev.phone, required: true, max: 40 },
+      { name: 'university', label: 'University', value: prev.university, required: true, max: 60, hint: 'For example UM, UKM or USM' },
+      { name: 'program', label: 'Programme', type: 'select', options: o.programs || [], value: prev.program },
+      { name: 'mmc', label: 'MMC number', value: prev.mmc, max: 20 },
+      { name: 'year', label: 'Year of study', type: 'number', value: prev.year, step: 1 },
+      { name: 'intake', label: 'Intake', value: prev.intake, max: 40, hint: 'For example June 2026' }
+    ],
+    validate: function (v) { robot = $('f_website').value; return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.email) ? '' : 'Please enter a valid email.'; },
+    onSubmit: function (v) {
+      var btn = $('lReg');
+      btn.disabled = true; btn.textContent = 'Sending your registration…';
+      api('register', Object.assign({ website: robot }, v)).then(function (r) {
+        infoBox('Registration sent', 'Thank you. Your registration is now waiting for the department admin to approve it.<br><br>' +
+          (r.emailed ? 'We have sent a confirmation to <b>' + esc(v.email) + '</b>. ' : '') +
+          'You will get an email when it is approved. After that, sign in as a Student: pick your name from the list and type this email.');
+      }, function (e) { registerForm(v, e.message); })   // keep what was typed, show why it was refused
+        .finally(function () { btn.disabled = false; btn.textContent = 'New student? Register here'; });
+    } });
+  // A box people never see; only automated form-fillers type in it, and the server then ignores the sign-up.
+  $('mForm').querySelector('.form').insertAdjacentHTML('beforeend',
+    '<div style="position:absolute;left:-9999px" aria-hidden="true"><label>Website <input id="f_website" tabindex="-1" autocomplete="off"></label></div>');
+  if (problem) { $('mErr').textContent = problem; $('mErr').classList.remove('hidden'); }
+}
+$('lReg').addEventListener('click', function () { registerForm(); });
 
 /* ---- name suggestions: opens when the name box is tapped, narrows as you type ---- */
 var AC = { rows: [], idx: -1 };
@@ -999,12 +1062,17 @@ function routeOk(n) { return n === 'student' && S.me.role !== 'Student' || NAV[S
 function go(r) { location.hash = '#/' + r; }
 window.addEventListener('hashchange', function () { if (S.d) { render(); window.scrollTo(0, 0); } });
 
+/** Admin only: new students who signed up and are waiting to be approved, oldest first. */
+function pendingRegs() {
+  return (S.d.registrations || []).filter(function (r) { return r.status === 'Pending'; })
+    .sort(function (a, b) { return String(a.submittedAt).localeCompare(String(b.submittedAt)); });
+}
 function approvalsCount() {
   if (S.me.role === 'Student') return 0;
   return S.d.students.reduce(function (n, s) {
     var p = pendingFor(s.id);
     return n + p.leaves.length + p.ms.length + (S.me.role === 'Admin' ? p.ext.length : 0);
-  }, 0);
+  }, S.me.role === 'Admin' ? pendingRegs().length : 0);
 }
 
 function render() {
@@ -1039,10 +1107,10 @@ VIEWS.Student.home = function () {
   var sup = IX.sup[st.supervisorId];
   var post = cp ? (function () {
     var total = Math.max(1, daysBetween(cp.startDate, cp.endDate)), gone = Math.max(0, daysBetween(cp.startDate, today()));
-    return '<div class="list"><div class="t" style="font-size:18px">' + esc(cp.place) + '</div><div class="d">' + range(cp.startDate, cp.endDate) + '</div></div>' +
+    return '<div class="list"><div class="t" style="font-size:18px">' + esc(postLabel(cp)) + '</div><div class="d">' + range(cp.startDate, cp.endDate) + '</div></div>' +
       '<div style="margin:10px 0 6px">' + bar(gone * 100 / total) + '</div><div class="small muted">' + plural(Math.max(0, daysBetween(today(), cp.endDate)), 'day') + ' left in this posting</div>';
   })() : '<p class="muted" style="margin:0">No posting with today\'s date on record.</p>';
-  if (np) post += '<div class="small" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><span class="muted">Next:</span> <b>' + esc(np.place) + '</b> from ' + fd(np.startDate) + '</div>';
+  if (np) post += '<div class="small" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)"><span class="muted">Next:</span> <b>' + esc(postLabel(np)) + '</b> from ' + fd(np.startDate) + '</div>';
   var p = pendingFor(st.id);
   var attn = rk.why.map(function (w) { return '<li><span class="dot ' + (w.l === 2 ? 'red' : 'amber') + '"></span><div class="main">' + esc(w.msg) + '</div></li>'; });
   if (p.leaves.length) attn.push('<li><span class="dot amber"></span><div class="main">' + plural(p.leaves.length, 'leave request') + ' waiting for approval</div></li>');
@@ -1064,21 +1132,22 @@ VIEWS.Student.home = function () {
 VIEWS.Student.postings = function () {
   var sid = myId();
   return '<div class="page-h"><div><h1>Postings</h1><div class="sub">Penempatan and Perlanjutan</div></div><span class="spacer"></span>' +
-    '<button class="btn pri" data-act="extReq">Request extension</button></div>' +
-    card('Your rotation timeline', timeline(sid, false));
+    '<button class="btn" data-act="extReq">Request extension</button><button class="btn pri" data-act="rotNew">Add HKL rotation</button></div>' +
+    card('Your rotation timeline', timeline(sid, false, true));
 };
 
-function timeline(sid, admin) {
+function timeline(sid, admin, self) {
   var ps = postingsOf(sid);
   if (!ps.length) return empty('No postings on record yet.');
   return '<ul class="tl">' + ps.map(function (p) {
     var tm = timing(p);
-    return '<li class="' + (tm.key === 'now' ? 'now' : tm.key === 'done' ? 'done' : '') + '"><div class="head"><span class="place">' + esc(p.place) + '</span>' +
+    return '<li class="' + (tm.key === 'now' ? 'now' : tm.key === 'done' ? 'done' : '') + '"><div class="head"><span class="place">' + esc(postLabel(p)) + '</span>' +
       '<span class="badge ' + tm.cls + '">' + tm.label + '</span>' + (p.type === 'Extension' ? '<span class="badge warn">Perlanjutan</span>' : '') +
       (p.status !== 'Approved' ? statusBadge(p.status) : '') + (p.round ? '<span class="faint small mono">R' + esc(p.round) + '</span>' : '') +
       (admin ? '<span class="spacer"></span><span class="row-actions">' +
         (p.status === 'Pending' ? '<button class="btn sm ok" data-act="extDecide" data-id="' + esc(p.id) + '" data-v="approve">Approve</button><button class="btn sm bad" data-act="extDecide" data-id="' + esc(p.id) + '" data-v="reject">Reject</button>' : '') +
-        '<button class="btn sm" data-act="postEdit" data-id="' + esc(p.id) + '">Edit</button></span>' : '') + '</div>' +
+        '<button class="btn sm" data-act="postEdit" data-id="' + esc(p.id) + '">Edit</button></span>'
+        : self && p.status === 'Pending' && String(p.id).indexOf('tmp-') !== 0 ? '<span class="spacer"></span><span class="row-actions"><button class="btn sm" data-act="postWithdraw" data-id="' + esc(p.id) + '">Withdraw</button></span>' : '') + '</div>' +
       '<div class="small muted">' + range(p.startDate, p.endDate) + (p.startDate && p.endDate ? ' · ' + Math.round(daysBetween(p.startDate, p.endDate) / 30.4) + ' months' : '') + '</div>' +
       (p.reason ? '<div class="small">Reason: ' + esc(p.reason) + '</div>' : '') + (p.note ? '<div class="small faint">' + esc(p.note) + '</div>' : '') + '</li>';
   }).join('') + '</ul>';
@@ -1113,8 +1182,12 @@ function leaveTable(rows, mode) {
 }
 
 VIEWS.Student.thesis = function () {
-  var th = thesis(myId());
+  var th = thesis(myId()), st = IX.stu[myId()];
   return '<div class="page-h"><div><h1>Dissertation</h1><div class="sub">Update your progress; your supervisor verifies each milestone.</div></div></div>' +
+    '<div style="margin-bottom:14px">' + card('Research / dissertation title',
+      '<div id="rTitle" style="font-size:16px;font-weight:600;line-height:1.4">' + (st.researchTitle ? esc(st.researchTitle) : '<span class="faint" style="font-weight:400">No title recorded yet</span>') + '</div>' +
+      '<div class="small muted" style="margin-top:6px">The same title shows on your Profile and in your supervisor\'s progress review.</div>',
+      '<button class="btn sm pri" data-act="titleEdit">' + (st.researchTitle ? 'Edit title' : 'Add title') + '</button>') + '</div>' +
     '<div class="grid g3" style="align-items:start">' +
       '<section class="card" style="display:flex;gap:18px;align-items:center">' + ringSvg(th.pct, 'verified') +
         '<div><div class="t" style="font-weight:600">' + th.done + ' of ' + th.total + ' verified</div><div class="small muted">' +
@@ -1184,7 +1257,7 @@ function cohortTable(rows, admin) {
       return '<tr class="click" data-go="student/' + esc(s.id) + '"><td style="width:24px">' + riskDot(s.id) + '</td><td class="name">' + esc(s.name) + '<div class="small muted">' + esc(s.program || '') + (s.archived ? ' · <span class="badge">Archived</span>' : '') + '</div></td>' +
         '<td class="nowrap">' + esc(yearLabel(s)) + '</td><td>' + esc(s.university) + '</td>' +
         (admin ? '<td>' + statusBadge(s.status) + '</td><td class="small">' + esc(supName(s.supervisorId) || '—') + '</td>' : '') +
-        '<td class="small">' + (cp ? '<b>' + esc(cp.place) + '</b><div class="faint">until ' + fd(cp.endDate) + '</div>' : '<span class="faint">' + esc(s.dept || '—') + '</span>') + '</td>' +
+        '<td class="small">' + (cp ? '<b>' + esc(postLabel(cp)) + '</b><div class="faint">until ' + fd(cp.endDate) + '</div>' : '<span class="faint">' + esc(s.dept || '—') + '</span>') + '</td>' +
         '<td style="min-width:110px">' + bar(th.pct, true) + '<div class="small faint">' + th.done + '/' + th.total + '</div></td>' +
         (scheme().length ? '<td class="nowrap">' + lamps(rv, old) + (old ? '<div class="small faint">' + esc(rv.period) + '</div>' : '') + '</td>' : '') +
         '<td>' + (p.n ? '<span class="badge warn">' + p.n + '</span>' : '<span class="faint">—</span>') + '</td></tr>';
@@ -1211,14 +1284,22 @@ VIEWS.common.approvals = function () {
     return item(m.studentId, '<b>' + esc(m.name) + '</b>', esc(m.note || ''), '<button class="btn sm ok" data-act="msDecide" data-id="' + esc(m.id) + '" data-v="verify">Verify</button><button class="btn sm bad" data-act="msDecide" data-id="' + esc(m.id) + '" data-v="revise">Send back</button>', 'sent ' + ago(m.submittedAt));
   });
   var ext = X.map(function (p) {
-    return item(p.studentId, '<b>Extension at ' + esc(p.place) + '</b> · ' + fd(p.startDate) + ' – ' + fd(p.endDate), esc(p.reason || ''),
+    return item(p.studentId, '<b>' + (p.type === 'Extension' ? 'Extension' : 'Rotation') + ' at ' + esc(postLabel(p)) + '</b> · ' + fd(p.startDate) + ' – ' + fd(p.endDate), esc(p.reason || ''),
       '<button class="btn sm ok" data-act="extDecide" data-id="' + esc(p.id) + '" data-v="approve">Approve</button><button class="btn sm bad" data-act="extDecide" data-id="' + esc(p.id) + '" data-v="reject">Reject</button>', ago(p.updatedAt));
   });
-  var total = L.length + M.length + X.length;
+  var R = admin ? pendingRegs() : [];
+  var regs = R.map(function (r) {
+    return '<li><div class="main"><div class="t">' + esc(r.name) + '</div><div>' + esc([r.university, r.program, r.year ? 'Year ' + r.year : '', r.intake].filter(Boolean).join(' · ')) + '</div>' +
+      '<div class="d">' + esc([r.email, r.phone, r.mmc ? 'MMC ' + r.mmc : ''].filter(Boolean).join(' · ')) + '</div></div>' +
+      '<div style="text-align:right"><div class="row-actions"><button class="btn sm ok" data-act="regDecide" data-id="' + esc(r.id) + '" data-v="approve">Approve</button>' +
+      '<button class="btn sm bad" data-act="regDecide" data-id="' + esc(r.id) + '" data-v="reject">Reject</button></div><div class="small faint" style="margin-top:4px">sent ' + ago(r.submittedAt) + '</div></div></li>';
+  });
+  var total = L.length + M.length + X.length + R.length;
   return '<div class="page-h"><div><h1>Approvals</h1><div class="sub">' + (total ? plural(total, 'item') + ' waiting, oldest first' : 'All clear') + '</div></div></div>' +
-    '<div class="stack">' + card('Leave requests <span class="badge">' + L.length + '</span>', leaves.length ? '<ul class="list">' + leaves.join('') + '</ul>' : empty('No leave waiting.')) +
+    '<div class="stack">' + (admin ? card('New student registrations <span class="badge">' + R.length + '</span>', regs.length ? '<ul class="list">' + regs.join('') + '</ul>' : empty('No new registrations.')) : '') +
+    card('Leave requests <span class="badge">' + L.length + '</span>', leaves.length ? '<ul class="list">' + leaves.join('') + '</ul>' : empty('No leave waiting.')) +
     card('Milestones submitted <span class="badge">' + M.length + '</span>', ms.length ? '<ul class="list">' + ms.join('') + '</ul>' : empty('No milestones waiting.')) +
-    (admin ? card('Extension requests <span class="badge">' + X.length + '</span>', ext.length ? '<ul class="list">' + ext.join('') + '</ul>' : empty('No extension requests.')) : '') + '</div>';
+    (admin ? card('Posting requests <span class="badge">' + X.length + '</span>', ext.length ? '<ul class="list">' + ext.join('') + '</ul>' : empty('No rotation or extension requests.')) : '') + '</div>';
 };
 
 /** Shared student file for supervisor (read + approve) and admin (full edit). */
@@ -1291,7 +1372,7 @@ VIEWS.Admin.dashboard = function () {
     '<span class="small faint">Data loaded ' + (since < 1 ? 'just now' : since + ' min ago') + '</span><button class="btn sm" data-act="reload">Reload from Sheet</button></div>' +
     '<div class="grid g5" style="margin-bottom:14px">' +
       tile('Active students', all.length, S.d.students.length - all.length + ' archived', '', 'data-act="dashFilter" data-k="clear"') +
-      tile('Waiting approval', approvalsCount(), 'leave, milestones, extensions', approvalsCount() ? 'warn' : '', 'data-go="approvals"') +
+      tile('Waiting approval', approvalsCount(), 'leave, milestones, postings, sign-ups', approvalsCount() ? 'warn' : '', 'data-go="approvals"') +
       tile('Postings ending', soon.length, 'within ' + soonDays + ' days', soon.length ? 'warn' : '', 'data-act="dashFilter" data-k="soon"') +
       tile('Red flags', red.length, 'overdue or past end date', red.length ? 'bad' : 'ok', 'data-act="dashFilter" data-k="risk" data-v="red"') +
       tile('No sign-in yet', all.filter(function (s) { return !s.email; }).length, 'students without email', '', 'data-act="dashFilter" data-k="noEmail"') +
@@ -1302,7 +1383,7 @@ VIEWS.Admin.dashboard = function () {
     '</div>' + reviewRow + '<div class="grid g3">' +
       '<div class="span2">' + card('Postings ending soon', soon.length ? '<div class="tbl-wrap"><table><thead><tr><th>Student</th><th>Place</th><th>Ends</th><th>Left</th><th>Next</th></tr></thead><tbody>' + soon.map(function (x) {
         var np = nextPosting(x.s.id);
-        return '<tr class="click" data-go="student/' + esc(x.s.id) + '"><td class="name">' + esc(x.s.name) + '</td><td>' + esc(x.p.place) + '</td><td class="nowrap">' + fd(x.p.endDate) + '</td><td class="mono">' + x.left + 'd</td><td class="small">' + (np ? esc(np.place) + ' · ' + fd(np.startDate) : '<span class="badge warn">None planned</span>') + '</td></tr>';
+        return '<tr class="click" data-go="student/' + esc(x.s.id) + '"><td class="name">' + esc(x.s.name) + '</td><td>' + esc(postLabel(x.p)) + '</td><td class="nowrap">' + fd(x.p.endDate) + '</td><td class="mono">' + x.left + 'd</td><td class="small">' + (np ? esc(postLabel(np)) + ' · ' + fd(np.startDate) : '<span class="badge warn">None planned</span>') + '</td></tr>';
       }).join('') + '</tbody></table></div>' : empty('No postings end in the next ' + soonDays + ' days.')) + '</div>' +
       card('Department load', capRows.length ? '<ul class="list">' + capRows.join('') + '</ul>' : '<p class="muted small" style="margin:0">Set DEPT_CAPACITY in Settings, e.g. ED:6|ISO1:5</p>') +
     '</div>';
@@ -1368,7 +1449,7 @@ VIEWS.Admin.planner = function () {
       var cur = mo === start;
       if (!hit) return '<td class="c' + (cur ? ' cur' : '') + '"></td>';
       places[hit.place] = 1;
-      return '<td class="c' + (cur ? ' cur' : '') + '"><span class="pl" style="background:' + placeColor(hit.place) + '" title="' + esc(hit.place + ': ' + fd(hit.startDate) + ' – ' + fd(hit.endDate)) + '">' + esc(hit.place) + '</span></td>';
+      return '<td class="c' + (cur ? ' cur' : '') + '"><span class="pl" style="background:' + placeColor(hit.place) + '" title="' + esc(postLabel(hit) + ': ' + fd(hit.startDate) + ' – ' + fd(hit.endDate)) + '">' + esc(hit.place) + '</span></td>';
     }).join('');
   };
   var body = rows.map(function (s) { return '<tr class="click" data-go="student/' + esc(s.id) + '"><td class="nm" title="' + esc(s.name) + '">' + esc(s.name) + '</td>' + cells(s.id) + '</tr>'; }).join('');
@@ -1453,10 +1534,10 @@ VIEWS.Admin.report = function () {
   var slides = order.map(function (k) {
     return groups[k].map(function (s) {
       var rv = reviewIn(s.id, per), cp = currentPosting(s.id);
-      var done = postingsOf(s.id).filter(function (p) { return p.status === 'Approved' && timing(p).key === 'done'; }).map(function (p) { return p.place; });
+      var done = postingsOf(s.id).filter(function (p) { return p.status === 'Approved' && timing(p).key === 'done'; }).map(postLabel);
       var facts = (ui.ic ? [['IC', s.ic]] : []).concat([
         ['Reported', fd(s.reportDate)], ['In department', s.reportDate || s.endDate ? fd(s.reportDate) + ' – ' + fd(s.endDate) : ''], ['Status', s.status],
-        ['Current posting', cp ? cp.place + ' (' + fd(cp.startDate) + ' – ' + fd(cp.endDate) + ')' : s.dept],
+        ['Current posting', cp ? postLabel(cp) + ' (' + fd(cp.startDate) + ' – ' + fd(cp.endDate) + ')' : s.dept],
         ['Postings completed', done.join(', ')], ['University supervisor', s.uniSupervisor]]);
       return '<section class="slide"><div class="hero" style="margin-bottom:18px">' + avatar(s, 'lg') + '<div style="flex:1;min-width:220px"><h2>' + esc(s.name) + ' ' + sampleBadge(rv) + '</h2>' +
         '<div class="muted">' + esc([s.program, s.university, yearLabel(s)].filter(Boolean).join(' · ')) + '</div></div>' +
@@ -1537,11 +1618,38 @@ var A = {
   },
   extReq: function () {
     form({ title: 'Request an extension (Perlanjutan)', submit: 'Send request', intro: 'The department admin reviews extension requests.',
-      fields: [{ name: 'place', label: 'Place', required: true, value: 'HKL' }, { name: 'startDate', label: 'From', type: 'date', required: true },
-               { name: 'endDate', label: 'To', type: 'date', required: true }, { name: 'reason', label: 'Reason', type: 'textarea', required: true }],
-      validate: function (v) { return v.endDate < v.startDate ? 'The end date is before the start date.' : ''; },
+      fields: [{ name: 'place', label: 'Place', required: true, value: 'HKL' }].concat(rotationFields('', false), [{ name: 'startDate', label: 'From', type: 'date', required: true },
+               { name: 'endDate', label: 'To', type: 'date', required: true }, { name: 'reason', label: 'Reason', type: 'textarea', required: true }]),
+      validate: function (v) { return rotationCheck(v) || (v.endDate < v.startDate ? 'The end date is before the start date.' : ''); },
       onSubmit: function (v) {
-        run('extension.request', v, { done: 'Extension request sent.', optimistic: function () { tmp('postings', { studentId: myId(), type: 'Extension', place: v.place, startDate: v.startDate, endDate: v.endDate, status: 'Pending', reason: v.reason }); } }).catch(function () {});
+        var row = { place: v.place, dept: rotationOf(v), startDate: v.startDate, endDate: v.endDate, reason: v.reason };
+        run('extension.request', row, { done: 'Extension request sent.', optimistic: function () { tmp('postings', Object.assign({ studentId: myId(), type: 'Extension', status: 'Pending' }, row)); } }).catch(function () {});
+      } });
+  },
+  rotNew: function () {
+    form({ title: 'Add HKL rotation', submit: 'Send to admin', intro: 'Record a posting inside HKL. The department admin confirms it, and then it shows as approved on your timeline.',
+      fields: rotationFields('', true).concat([{ name: 'startDate', label: 'From', type: 'date', required: true }, { name: 'endDate', label: 'To', type: 'date', required: true },
+               { name: 'reason', label: 'Note (optional)', type: 'textarea', max: 500 }]),
+      validate: function (v) { return rotationCheck(v) || (v.endDate < v.startDate ? 'The end date is before the start date.' : ''); },
+      onSubmit: function (v) {
+        var row = { dept: rotationOf(v), startDate: v.startDate, endDate: v.endDate, reason: v.reason };
+        run('rotation.request', row, { done: 'Rotation sent to the admin.', optimistic: function () { tmp('postings', Object.assign({ studentId: myId(), type: 'Posting', place: 'HKL', status: 'Pending' }, row)); } }).catch(function () {});
+      } });
+  },
+  postWithdraw: function (id) {
+    var p = find('postings', id);
+    if (!p) return;
+    confirmBox('Withdraw this request?', esc(postLabel(p)) + ' · ' + range(p.startDate, p.endDate) + '. It has not been approved yet, so it will simply be removed.', 'Withdraw', function () {
+      run('posting.withdraw', { id: id }, { done: 'Request withdrawn.', optimistic: function () { S.d.postings = S.d.postings.filter(function (x) { return x.id !== id; }); } }).catch(function () {});
+    }, true);
+  },
+  titleEdit: function () {
+    var st = IX.stu[myId()];
+    form({ title: 'Research / dissertation title', submit: 'Save title',
+      fields: [{ name: 'researchTitle', label: 'Title', type: 'textarea', value: st.researchTitle, max: 300, full: true, hint: 'Leave it empty if you do not have a title yet.' }],
+      onSubmit: function (v) {
+        var title = v.researchTitle.replace(/\s+/g, ' ').trim();
+        run('profile.update', { fields: { researchTitle: title } }, { done: 'Title saved.', optimistic: function () { patch('students', st.id, { researchTitle: title }); } }).catch(function () {});
       } });
   },
   profileEdit: function () { studentForm(IX.stu[myId()], true); },
@@ -1642,6 +1750,22 @@ var A = {
           optimistic: function () { patch('postings', id, { status: ok ? 'Approved' : 'Rejected', note: v.note }); } }).catch(function () {});
       } });
   },
+  regDecide: function (id, el) {
+    var r = find('registrations', id), ok = el.getAttribute('data-v') === 'approve';
+    if (!r) return;
+    var sups = [{ value: '', label: '— decide later —' }].concat(S.d.supervisors.filter(function (x) { return x.active !== false; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (x) { return { value: x.id, label: x.name }; }));
+    form({ title: (ok ? 'Approve' : 'Reject') + ' registration · ' + r.name, submit: ok ? 'Approve and email student' : 'Reject',
+      intro: esc([r.university, r.program, r.email, r.phone].filter(Boolean).join(' · ')) + '<br>' +
+        (ok ? 'This adds the student to the list and emails them how to sign in. You can fill in the rest of their details afterwards.'
+            : 'The registration is removed from this list. No email is sent to the person.'),
+      fields: ok ? [{ name: 'supervisorId', label: 'EDHKL supervisor', type: 'select', options: sups, value: '' }]
+                 : [{ name: 'note', label: 'Reason (optional, for your records)', type: 'textarea', max: 500 }],
+      onSubmit: function (v) {
+        run('registration.decide', { id: id, decision: ok ? 'approve' : 'reject', supervisorId: v.supervisorId, note: v.note },
+          { done: ok ? 'Student added.' : 'Registration rejected.', optimistic: function () { patch('registrations', id, { status: ok ? 'Approved' : 'Rejected' }); } }).catch(function () {});
+      } });
+  },
   stuNew: function () { studentForm(null); },
   stuEdit: function (id) { studentForm(IX.stu[id]); },
   stuArchive: function (id) {
@@ -1708,7 +1832,7 @@ var A = {
     var cell =function (v) { v = String(v == null ? '' : v); if (/^[=+\-@]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     var lines = [cols.join(',')].concat(adminFilterRows().map(function (s) {
       var cp = currentPosting(s.id), th = thesis(s.id);
-      var o = Object.assign({}, s, { supervisor: supName(s.supervisorId), currentPosting: cp ? cp.place : '', currentPostingEnds: cp ? cp.endDate : '', milestonesVerified: th.done + '/' + th.total, flag: risk(s.id).level });
+      var o = Object.assign({}, s, { supervisor: supName(s.supervisorId), currentPosting: cp ? postLabel(cp) : '', currentPostingEnds: cp ? cp.endDate : '', milestonesVerified: th.done + '/' + th.total, flag: risk(s.id).level });
       var rv = reviewsOf(s.id)[0];
       if (rv) { o.reviewPeriod = rv.period; scheme().forEach(function (f) { o['review_' + f.key] = rv[f.key]; }); }
       return cols.map(function (c) { return cell(o[c]); }).join(',');
@@ -1805,21 +1929,22 @@ function postingForm(sid, p) {
   var rounds = of('postings', sid).map(function (x) { return +x.round || 0; });
   form({ title: (p.id ? 'Edit posting · ' : 'Add posting · ') + stuName(sid), submit: 'Save',
     fields: [
-      { name: 'place', label: 'Place', value: p.place, required: true, max: 120 },
+      { name: 'place', label: 'Place', value: p.place, required: true, max: 120 }].concat(rotationFields(p.dept, false), [
       { name: 'type', label: 'Type', type: 'select', options: [{ value: 'Posting', label: 'Posting (Penempatan)' }, { value: 'Extension', label: 'Extension (Perlanjutan)' }], value: p.type || 'Posting' },
       { name: 'startDate', label: 'From', type: 'date', value: p.startDate }, { name: 'endDate', label: 'To', type: 'date', value: p.endDate },
       { name: 'round', label: 'Round', type: 'number', value: p.round || Math.max.apply(null, [0].concat(rounds)) + 1 },
       { name: 'status', label: 'Status', type: 'select', options: ['Approved', 'Pending', 'Rejected'], value: p.status || 'Approved' },
       { name: 'note', label: 'Note', type: 'text', value: p.note, max: 500 }
-    ],
+    ]),
     extraBtn: p.id ? '<button type="button" class="btn bad" id="mDel">Delete</button>' : '',
-    validate: function (v) { return v.startDate && v.endDate && v.endDate < v.startDate ? 'The end date is before the start date.' : ''; },
+    validate: function (v) { return rotationCheck(v) || (v.startDate && v.endDate && v.endDate < v.startDate ? 'The end date is before the start date.' : ''); },
     onSubmit: function (v) {
       v.studentId = sid;
+      v.dept = rotationOf(v); delete v.deptPick; delete v.deptOther;
       run('posting.save', { id: p.id || '', fields: v }, { done: 'Posting saved.', optimistic: function () { if (p.id) patch('postings', p.id, v); else tmp('postings', v); } }).catch(function () {});
     } });
   if (p.id) $('mDel').onclick = function () {
-    confirmBox('Delete this posting?', esc(p.place) + ' · ' + range(p.startDate, p.endDate) + '. This cannot be undone.', 'Delete', function () {
+    confirmBox('Delete this posting?', esc(postLabel(p)) + ' · ' + range(p.startDate, p.endDate) + '. This cannot be undone.', 'Delete', function () {
       run('posting.delete', { id: p.id }, { done: 'Posting deleted.', optimistic: function () { S.d.postings = S.d.postings.filter(function (x) { return x.id !== p.id; }); } }).catch(function () {});
     }, true);
   };
