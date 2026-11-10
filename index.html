@@ -30,7 +30,9 @@ body[data-role="Admin"] { --accent: #7b2d42; --accent-soft: #f5e7eb; }
 :root { color-scheme: light; }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); }
-body { min-height: 100vh; -webkit-font-smoothing: antialiased; }
+body { min-height: 100vh; -webkit-font-smoothing: antialiased; background: transparent; }
+/* Faded photo of the HKL link bridge behind every screen; the plain page colour shows through it. */
+body::before { content: ''; position: fixed; inset: 0; z-index: -1; background: url('bg.jpg') center / cover no-repeat; opacity: .2; pointer-events: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
 a { color: var(--accent); }
 .hidden { display: none !important; }
@@ -307,6 +309,7 @@ label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } .pulse path { stroke-dashoffset: 0; } }
 @media print {
   :root { --bg: #ffffff; --shadow: none; }
+  body::before { display: none; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .top, .toolbar, .btn, #toasts, .noprint { display: none !important; }
   main { padding: 0; max-width: none; }
