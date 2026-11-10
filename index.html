@@ -180,6 +180,8 @@ label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px
 /* hero */
 .hero { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
 .avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font: 600 20px var(--mono); flex: none; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.avatar.lg { width: 84px; height: 84px; font-size: 28px; }
 .hero h1 { font-size: 20px; margin: 0; line-height: 1.25; }
 .hero .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 
@@ -207,6 +209,51 @@ label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px
 
 /* attention */
 .attn li .dot { margin-top: 6px; }
+
+/* ---------- progress review: green circle / amber triangle / red square, so colour is never the only cue ---------- */
+:root { --st-green: #0ca30c; --st-amber: #fab219; --st-red: #d03b3b; }
+.lamp { width: 12px; height: 12px; display: inline-block; flex: none; }
+.lamp.green { background: var(--st-green); border-radius: 50%; }
+.lamp.amber { background: var(--st-amber); clip-path: polygon(50% 2%, 100% 98%, 0 98%); }
+.lamp.red { background: var(--st-red); border-radius: 2px; }
+.lamp.none { border: 1.5px solid var(--line-2); border-radius: 50%; }
+.lamps { display: inline-flex; gap: 4px; align-items: center; vertical-align: middle; }
+.lamps.old { opacity: .45; }
+.rv-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 900px) { .rv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.rv { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; background: var(--surface-2); min-width: 0; }
+.rv.green { background: color-mix(in srgb, var(--st-green) 11%, var(--surface)); border-color: color-mix(in srgb, var(--st-green) 35%, var(--line)); }
+.rv.amber { background: color-mix(in srgb, var(--st-amber) 16%, var(--surface)); border-color: color-mix(in srgb, var(--st-amber) 50%, var(--line)); }
+.rv.red { background: color-mix(in srgb, var(--st-red) 11%, var(--surface)); border-color: color-mix(in srgb, var(--st-red) 40%, var(--line)); }
+.rv .k { font-size: 12px; color: var(--muted); font-weight: 600; }
+.rv .v { display: flex; gap: 7px; align-items: center; font-weight: 600; font-size: 14px; margin-top: 5px; line-height: 1.25; }
+.rv .v.unrated { color: var(--faint); font-weight: 500; }
+.rv-head { margin-bottom: 12px; }
+.rv-head .t { font-weight: 600; }
+.rv-foot { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.rv-note { margin-top: 10px; padding: 9px 12px; border-radius: var(--r-sm); background: var(--surface-2); font-size: 14px; }
+.sbars { display: grid; gap: 9px; }
+.srow { display: grid; grid-template-columns: 150px 1fr 150px; gap: 12px; align-items: center; font-size: 13px; }
+.srow .lab { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srow .n { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; display: flex; gap: 8px; align-items: center; }
+.srow .n span { display: inline-flex; gap: 4px; align-items: center; }
+.sbar { display: flex; gap: 2px; height: 14px; }
+.sbar i { display: block; height: 100%; min-width: 4px; border-radius: 3px; }
+.sbar i.green { background: var(--st-green); } .sbar i.amber { background: var(--st-amber); } .sbar i.red { background: var(--st-red); } .sbar i.none { background: var(--line-2); }
+@media (max-width: 640px) { .srow { grid-template-columns: 1fr; gap: 3px; } }
+
+/* ---------- report ---------- */
+.slide { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 24px 28px; margin-bottom: 16px; }
+.slide h2 { font-size: 20px; margin: 0 0 4px; line-height: 1.25; }
+.slide .lead { color: var(--muted); margin: 0 0 16px; }
+.slide.cover { padding: 56px 40px; }
+.slide.cover h2 { font-size: 34px; margin: 10px 0 6px; }
+.slide.cover .meta { margin-top: 22px; }
+.slide .cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; align-items: start; }
+@media (max-width: 900px) { .slide .cols { grid-template-columns: 1fr; } }
+.slide .kv { grid-template-columns: 150px 1fr; }
+.slide .sup { text-align: right; font-size: 13px; }
+@page { size: A4 landscape; margin: 10mm; }
 
 /* ---------- modal ---------- */
 .scrim { position: fixed; inset: 0; background: rgba(10, 18, 26, .45); z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 6vh 14px 14px; overflow-y: auto; }
@@ -267,7 +314,25 @@ label.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px
 }
 .nav a svg { width: 17px; height: 17px; flex: none; }
 @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } .pulse path { stroke-dashoffset: 0; } }
-@media print { .top, .toolbar, .btn, #toasts { display: none !important; } main { padding: 0; } .card { box-shadow: none; } }
+@media print {
+  /* Paper is always light, whatever the screen theme. */
+  :root, body[data-role] {
+    --bg: #ffffff; --surface: #ffffff; --surface-2: #f8fafb; --line: #e3e8ed; --line-2: #d3dbe2;
+    --text: #17222c; --muted: #5d6b78; --faint: #8794a0; --accent: #0f766e; --accent-ink: #ffffff; --accent-soft: #e3f3f1;
+    --ok: #157f4a; --ok-soft: #e3f5ea; --warn: #a3620a; --warn-soft: #fcf1dd; --bad: #b42335; --bad-soft: #fbe6e9;
+    --info: #285e9b; --info-soft: #e5eef8; --shadow: none;
+  }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .top, .toolbar, .btn, #toasts, .noprint { display: none !important; }
+  main { padding: 0; max-width: none; }
+  .card { box-shadow: none; }
+  .slide { border: 0; box-shadow: none; border-radius: 0; margin: 0; padding: 4mm 2mm; break-after: page; break-inside: avoid; }
+  .slide:last-child { break-after: auto; }
+  .slide.cover { padding-top: 40mm; }
+  /* Keep the wide layout on paper even if the browser reports a narrow page. */
+  .report .g4, .report .rv-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .report .cols { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+}
 </style>
 </head>
 <body>
@@ -342,9 +407,9 @@ function api(fn) {
 
 /* ===================================================================== STATE */
 
-var S = { token: null, me: null, d: null, route: '', loadedAt: 0, ui: { f: {}, sf: {}, q: '', sq: '' }, busy: 0 };
+var S = { token: null, me: null, d: null, route: '', loadedAt: 0, ui: { f: {}, sf: {}, q: '', sq: '', rep: { period: '', ic: false, unrated: true } }, busy: 0 };
 var TABLE_KEY = { Students: 'students', Supervisors: 'supervisors', Admins: 'admins', Postings: 'postings',
-                  Leaves: 'leaves', Milestones: 'milestones', Holidays: 'holidays' };
+                  Leaves: 'leaves', Milestones: 'milestones', Holidays: 'holidays', Reviews: 'reviews' };
 
 function saveSnap() {
   try { sessionStorage.setItem(TOKEN_KEY, S.token); sessionStorage.setItem(SNAP_KEY, JSON.stringify(S.d)); } catch (e) {}
@@ -361,11 +426,11 @@ function setData(d) {
 var IX = {};
 function index() {
   var d = S.d;
-  ['students', 'supervisors', 'postings', 'leaves', 'milestones', 'holidays', 'admins'].forEach(function (k) { d[k] = d[k] || []; });
+  ['students', 'supervisors', 'postings', 'leaves', 'milestones', 'holidays', 'admins', 'reviews'].forEach(function (k) { d[k] = d[k] || []; });
   IX.stu = {}; d.students.forEach(function (s) { IX.stu[s.id] = s; });
   IX.sup = {}; d.supervisors.forEach(function (s) { IX.sup[s.id] = s; });
-  IX.by = { postings: {}, leaves: {}, milestones: {} };
-  ['postings', 'leaves', 'milestones'].forEach(function (k) {
+  IX.by = { postings: {}, leaves: {}, milestones: {}, reviews: {} };
+  ['postings', 'leaves', 'milestones', 'reviews'].forEach(function (k) {
     d[k].forEach(function (r) { (IX.by[k][r.studentId] = IX.by[k][r.studentId] || []).push(r); });
   });
   IX.off = {}; d.holidays.forEach(function (h) { IX.off[h.date] = h.name; });
@@ -387,6 +452,7 @@ function merge(res) {
     d[k] = d[k].filter(function (r) { return res.removed[t].indexOf(r.id) < 0; });
   });
   if (res.settings) d.settings = res.settings;
+  if (res.reviewPeriod && d.review) d.review.period = res.reviewPeriod;
   index();
   saveSnap();
 }
@@ -448,6 +514,43 @@ function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
 function initials(name) {
   return String(name || '?').replace(/\b(DR|DATUK|PROF|BIN|BINTI|BT|A\/L|A\/P)\b/gi, ' ').trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase();
 }
+/** Photos load one by one after the page is drawn; initials show until then. */
+var PHOTOS = {};
+function avatar(st, cls) {
+  var ph = st.photoId && PHOTOS[st.id], src = ph && ph.key === st.photoId ? ph.url : '';
+  return '<div class="avatar' + (cls ? ' ' + cls : '') + '"' + (st.photoId && !src ? ' data-photo="' + esc(st.id) + '"' : '') + '>' +
+    (src ? '<img src="' + esc(src) + '" alt="">' : esc(initials(st.name))) + '</div>';
+}
+function loadPhotos() {
+  document.querySelectorAll('[data-photo]').forEach(function (el) {
+    var id = el.getAttribute('data-photo'), st = IX.stu[id], key = st && st.photoId;
+    if (!key || (PHOTOS[id] && PHOTOS[id].key === key)) return;
+    PHOTOS[id] = { key: key, url: '' };
+    api('photo', S.token, id).then(function (url) {
+      PHOTOS[id] = { key: key, url: url || '' };
+      if (url) render();
+    }, function () { delete PHOTOS[id]; });
+  });
+}
+/** Shrinks a chosen picture to a small JPEG (max 480 px) so it uploads fast. */
+function shrinkPhoto(file) {
+  return new Promise(function (ok, no) {
+    if (!/^image\//.test(file.type)) return no(new Error('Please choose a photo (JPG or PNG).'));
+    var img = new Image(), src = URL.createObjectURL(file);
+    img.onload = function () {
+      URL.revokeObjectURL(src);
+      var k = Math.min(1, 480 / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+      var g = cv.getContext('2d');
+      g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(img, 0, 0, cv.width, cv.height);
+      var q = [0.85, 0.7, 0.55, 0.4];
+      for (var i = 0; i < q.length; i++) { var url = cv.toDataURL('image/jpeg', q[i]); if (url.length < 90000) return ok(url); }
+      no(new Error('This photo is too detailed to upload. Please try another one.'));
+    };
+    img.onerror = function () { URL.revokeObjectURL(src); no(new Error('This photo could not be opened. Please try a JPG or PNG.')); };
+    img.src = src;
+  });
+}
 function title(s) { return String(s || '').toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
 function workingDays(start, end, half) {
   if (!start || !end || end < start) return 0;
@@ -471,6 +574,7 @@ function svgIcon(name) {
     chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
     gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
     log: 'M5 4h14v16H5zM9 8h6M9 12h6M9 16h4',
+    slides: 'M3 4h18v12H3zM12 16v4M8 20h8M7 12V9M12 12V7M17 12v-2',
     id: 'M3 5h18v14H3zM8 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5 16a3 3 0 0 1 6 0M14 9h4M14 13h4'
   }[name] || '';
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + p + '"/></svg>';
@@ -577,6 +681,85 @@ function tile(k, v, s, cls, act) {
 function empty(msg) { return '<div class="empty">' + esc(msg) + '</div>'; }
 function card(t, body, extra) { return '<section class="card"><h2>' + t + (extra ? '<span class="spacer"></span>' + extra : '') + '</h2>' + body + '</section>'; }
 
+/* ---- progress review ---- */
+
+var LAMP_WORD = { green: 'green', amber: 'amber', red: 'red', none: 'not rated' };
+function scheme() { return (S.d.review && S.d.review.scheme) || []; }
+function period() { return (S.d.review && S.d.review.period) || ''; }
+function rateColor(f, v) { var o = f.options.filter(function (x) { return x[0] === v; })[0]; return o ? o[1] : 'none'; }
+function reviewsOf(sid) {
+  return of('reviews', sid).slice().sort(function (a, b) { return String(b.ratedAt || '').localeCompare(String(a.ratedAt || '')); });
+}
+function reviewIn(sid, per) { return of('reviews', sid).filter(function (r) { return r.period === per; })[0] || null; }
+/** The worst colour in a review: red beats amber beats green; 'none' when nothing is rated. */
+function worst(rv) {
+  var lvl = { none: 0, green: 1, amber: 2, red: 3 }, w = 'none';
+  if (rv) scheme().forEach(function (f) { var c = rateColor(f, rv[f.key]); if (lvl[c] > lvl[w]) w = c; });
+  return w;
+}
+function lamp(color, tip) {
+  return '<span class="lamp ' + color + '" role="img" aria-label="' + esc(tip || LAMP_WORD[color]) + '"' + (tip ? ' title="' + esc(tip) + '"' : '') + '></span>';
+}
+function lamps(rv, old) {
+  if (!rv) return '<span class="faint small">Not rated</span>';
+  return '<span class="lamps' + (old ? ' old' : '') + '">' + scheme().map(function (f) {
+    return lamp(rateColor(f, rv[f.key]), f.label + ': ' + (rv[f.key] || 'not rated'));
+  }).join('') + '</span>';
+}
+function lampLegend() {
+  return '<div class="legend">' + [['green', 'On track'], ['amber', 'Needs monitoring'], ['red', 'Behind'], ['none', 'Not rated']].map(function (x) {
+    return '<span>' + lamp(x[0]) + esc(x[1]) + '</span>';
+  }).join('') + '</div>';
+}
+/** Where the research stands, read from the dissertation milestones. */
+function researchStage(sid) {
+  var st = IX.stu[sid] || {}, th = thesis(sid);
+  if (!th.total) return '';
+  if (th.done === th.total) return 'Completed';
+  var cur = th.ms.filter(function (m) { return m.status !== 'Verified'; })[0];
+  if (cur === th.ms[0] && cur.status === 'Not started' && !st.researchTitle) return 'No topic yet';
+  return cur.name;
+}
+function reviewTiles(rv) {
+  return '<div class="rv-grid">' + scheme().map(function (f) {
+    var v = rv && rv[f.key], c = rateColor(f, v);
+    return '<div class="rv ' + c + '"><div class="k">' + esc(f.label) + '</div><div class="v' + (v ? '' : ' unrated') + '">' + lamp(c) + '<span>' + esc(v || 'Not rated') + '</span></div></div>';
+  }).join('') + '</div>';
+}
+function researchHead(sid) {
+  var st = IX.stu[sid] || {}, stage = researchStage(sid);
+  return '<div class="rv-head"><div class="small muted">Research project</div><div class="t">' + (st.researchTitle ? esc(st.researchTitle) : '<span class="faint">No title recorded yet</span>') + '</div>' +
+    (stage ? '<div class="small muted">Stage: ' + esc(stage) + '</div>' : '') + '</div>';
+}
+/** The eight-tile dashboard for one student, newest rating first, older periods listed underneath. */
+function reviewCard(sid, canRate) {
+  if (!scheme().length) return '';
+  var all = reviewsOf(sid), rv = all[0], cur = period(), isCur = rv && rv.period === cur;
+  var body = researchHead(sid);
+  if (rv) {
+    body += reviewTiles(rv) + (rv.comment ? '<div class="rv-note"><span class="muted small">Supervisor comment</span><br>' + esc(rv.comment) + '</div>' : '') +
+      '<div class="rv-foot">Rated by ' + esc(rv.ratedBy || '—') + ' · ' + fd(String(rv.ratedAt || '').slice(0, 10)) + '</div>';
+    if (all.length > 1) body += '<ul class="list" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">' + all.slice(1).map(function (r) {
+      return '<li><div class="main small"><b>' + esc(r.period) + '</b> <span class="faint">· ' + esc(r.ratedBy || '') + '</span></div>' + lamps(r) + '</li>';
+    }).join('') + '</ul>';
+  } else body += '<p class="muted" style="margin:0">' + (canRate ? 'No rating yet. Use “Rate progress” to record the first one.' : 'Your supervisor has not recorded a rating yet.') + '</p>';
+  return card('Progress review ' + (rv ? '<span class="badge' + (isCur ? ' acc' : '') + '">' + esc(rv.period) + '</span>' : '') +
+    (rv && !isCur ? '<span class="badge warn">Not yet rated for ' + esc(cur) + '</span>' : ''), body,
+    canRate ? '<button class="btn sm pri" data-act="rate" data-id="' + esc(sid) + '">' + (isCur ? 'Update rating' : 'Rate progress') + '</button>' : '');
+}
+/** One stacked bar per rating item, counted over the given students for one period. */
+function reviewBars(students, per) {
+  return '<div class="sbars">' + scheme().map(function (f) {
+    var n = { green: 0, amber: 0, red: 0, none: 0 };
+    students.forEach(function (s) { var rv = reviewIn(s.id, per); n[rateColor(f, rv && rv[f.key])]++; });
+    var seg = ['green', 'amber', 'red', 'none'].filter(function (c) { return n[c]; });
+    return '<div class="srow"><span class="lab" title="' + esc(f.label) + '">' + esc(f.label) + '</span><span class="sbar">' + seg.map(function (c) {
+      return '<i class="' + c + '" style="flex:' + n[c] + '" title="' + esc(f.label + ': ' + n[c] + ' ' + LAMP_WORD[c]) + '"></i>';
+    }).join('') + '</span><span class="n">' + ['green', 'amber', 'red'].map(function (c) { return '<span>' + lamp(c) + n[c] + '</span>'; }).join('') + '</span></div>';
+  }).join('') + '</div>';
+}
+function nowStamp() { return new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 16).replace('T', ' '); }
+
 /* ================================================================ UI KIT */
 
 function toast(msg, cls) {
@@ -630,7 +813,8 @@ function form(o) {
     var p = o.preview(values()), pv = $('mPreview');
     pv.classList.toggle('hidden', !p); pv.innerHTML = p || '';
   };
-  f.addEventListener('input', upd); f.addEventListener('change', upd); upd();
+  var changed = function () { $('mErr').classList.add('hidden'); upd(); };
+  f.addEventListener('input', changed); f.addEventListener('change', changed); upd();
   f.addEventListener('submit', function (ev) {
     ev.preventDefault();
     var v = values(), miss = o.fields.filter(function (fl) { return fl.required && !v[fl.name]; });
@@ -734,7 +918,7 @@ var NAV = {
   Student: [['home', 'Home', 'home'], ['postings', 'Postings', 'map'], ['leave', 'Leave', 'cal'], ['thesis', 'Dissertation', 'book'], ['profile', 'Profile', 'user']],
   Supervisor: [['students', 'My students', 'users'], ['approvals', 'Approvals', 'check']],
   Admin: [['dashboard', 'Dashboard', 'chart'], ['students', 'Students', 'users'], ['approvals', 'Approvals', 'check'], ['planner', 'Planner', 'grid'],
-          ['supervisors', 'Supervisors', 'id'], ['settings', 'Settings', 'gear'], ['audit', 'Audit log', 'log']]
+          ['report', 'Report', 'slides'], ['supervisors', 'Supervisors', 'id'], ['settings', 'Settings', 'gear'], ['audit', 'Audit log', 'log']]
 };
 
 function enterApp() {
@@ -778,6 +962,7 @@ function render() {
   var active = document.activeElement, keep = active && active.id && main.contains(active) ? { id: active.id, s: active.selectionStart } : null;
   main.innerHTML = html;
   if (keep && $(keep.id)) { var el = $(keep.id); el.focus(); try { el.setSelectionRange(keep.s, keep.s); } catch (e) {} }
+  loadPhotos();
 }
 
 /* ============================================================ STUDENT VIEWS */
@@ -798,7 +983,7 @@ VIEWS.Student.home = function () {
   var p = pendingFor(st.id);
   var attn = rk.why.map(function (w) { return '<li><span class="dot ' + (w.l === 2 ? 'red' : 'amber') + '"></span><div class="main">' + esc(w.msg) + '</div></li>'; });
   if (p.leaves.length) attn.push('<li><span class="dot amber"></span><div class="main">' + plural(p.leaves.length, 'leave request') + ' waiting for approval</div></li>');
-  return '<div class="card hero" style="margin-bottom:14px"><div class="avatar">' + esc(initials(st.name)) + '</div><div style="flex:1;min-width:220px">' +
+  return '<div class="card hero" style="margin-bottom:14px">' + avatar(st, 'lg') + '<div style="flex:1;min-width:220px">' +
     '<h1>' + esc(st.name) + '</h1><div class="muted small">' + esc([st.program, st.university, yearLabel(st)].filter(Boolean).join(' · ')) + '</div>' +
     '<div class="meta">' + statusBadge(st.status) + (st.dept ? '<span class="badge">' + esc(st.dept) + '</span>' : '') + '</div></div>' +
     '<div class="small"><div class="muted">EDHKL supervisor</div><b>' + esc(sup ? sup.name : 'Not assigned') + '</b></div></div>' +
@@ -810,7 +995,7 @@ VIEWS.Student.home = function () {
     '</div><div class="grid g2">' +
       card('Current posting', post, '<a class="btn sm" href="#/postings">All postings</a>') +
       card('Needs attention', attn.length ? '<ul class="list attn">' + attn.join('') + '</ul>' : '<p class="muted" style="margin:0">Nothing needs your attention. You are on track.</p>') +
-    '</div>';
+    '</div><div style="margin-top:14px">' + reviewCard(st.id, false) + '</div>';
 };
 
 VIEWS.Student.postings = function () {
@@ -896,12 +1081,17 @@ function milestoneList(ms, mode) {
 
 VIEWS.Student.profile = function () {
   var st = IX.stu[myId()], sup = IX.sup[st.supervisorId];
-  return '<div class="page-h"><div><h1>Profile</h1><div class="sub">Tell the admin if anything here is wrong.</div></div><span class="spacer"></span><button class="btn pri" data-act="profileEdit">Edit contact details</button></div>' +
+  return '<div class="page-h"><div><h1>Profile</h1><div class="sub">Tell the admin if anything here is wrong.</div></div><span class="spacer"></span><button class="btn pri" data-act="profileEdit">Edit my details</button></div>' +
+    '<div class="card hero" style="margin-bottom:14px">' + avatar(st, 'lg') + '<div style="flex:1;min-width:220px"><h1>' + esc(st.name) + '</h1>' +
+    '<div class="muted small">' + (st.photoId ? 'Your photo is seen by your supervisor and the admin.' : 'Please add a clear passport-style photo of yourself.') + '</div></div>' +
+    '<button class="btn" data-act="photoPick">' + (st.photoId ? 'Change photo' : 'Upload photo') + '</button></div>' +
     '<div class="grid g2">' + card('Training', kv([
       ['Programme', st.program], ['University', st.university], ['Year / stage', yearLabel(st)], ['Status', st.status], ['Department now', st.dept + (st.deptPeriod && st.deptPeriod !== 'NOW' ? ' (' + st.deptPeriod + ')' : '')],
-      ['EDHKL supervisor', sup ? sup.name : ''], ['University supervisor', st.uniSupervisor], ['Reported to department', fd(st.reportDate)], ['Ends in department', fd(st.endDate)], ['File no.', st.fileNo]
+      ['EDHKL supervisor', sup ? sup.name : ''], ['University supervisor', st.uniSupervisor], ['Reported to department', fd(st.reportDate)], ['Ends in department', fd(st.endDate)],
+      ['Intake', st.intake], ['Expected graduation', fd(st.expectedGraduation)], ['File no.', st.fileNo], ['Thumb / punch', st.attendance],
+      ['Research title', st.researchTitle]
     ])) + card('Personal and contact', kv([
-      ['Name', st.name], ['MMC', st.mmc], ['Position', [st.position, st.grade].filter(Boolean).join(' · ')], ['Phone', st.phone], ['Email', st.email], ['Address', st.address], ['First degree', st.degree]
+      ['Name', st.name], ['IC', st.ic], ['MMC', st.mmc], ['Position', [st.position, st.grade].filter(Boolean).join(' · ')], ['Phone', st.phone], ['Email', st.email], ['Other emails', st.altEmails], ['Address', st.address], ['First degree', st.degree]
     ])) + '</div>';
 };
 function kv(pairs) {
@@ -915,22 +1105,25 @@ VIEWS.Supervisor.students = function () {
   var reds = rows.filter(function (s) { return risk(s.id).level === 'red'; }).length;
   if (q) rows = rows.filter(function (s) { return (s.name + ' ' + s.university + ' ' + s.dept).toLowerCase().indexOf(q) > -1; });
   rows.sort(function (a, b) { return ['red', 'amber', 'green'].indexOf(risk(a.id).level) - ['red', 'amber', 'green'].indexOf(risk(b.id).level) || a.name.localeCompare(b.name); });
+  var rated = S.d.students.filter(function (s) { return reviewIn(s.id, period()); }).length, total = S.d.students.length;
   return '<div class="page-h"><div><h1>My students</h1><div class="sub">' + esc(S.me.name) + '</div></div></div>' +
-    '<div class="grid g3" style="margin-bottom:14px">' + tile('Students', S.d.students.length) + tile('Waiting for you', approvalsCount(), 'leave and milestones', approvalsCount() ? 'warn' : '', 'data-go="approvals"') + tile('Need attention', reds, 'red flag', reds ? 'bad' : 'ok') + '</div>' +
+    '<div class="grid g4" style="margin-bottom:14px">' + tile('Students', total) + tile('Waiting for you', approvalsCount(), 'leave and milestones', approvalsCount() ? 'warn' : '', 'data-go="approvals"') + tile('Need attention', reds, 'red flag', reds ? 'bad' : 'ok') +
+      (scheme().length ? tile('Progress rated', rated + '<span class="faint" style="font-size:18px">/' + total + '</span>', 'for ' + esc(period()), rated < total ? 'warn' : 'ok') : '') + '</div>' +
     '<div class="toolbar"><input class="input search" id="sq" placeholder="Search name, university, department" value="' + esc(S.ui.sq) + '"></div>' +
     card('Cohort', cohortTable(rows, false));
 };
 
 function cohortTable(rows, admin) {
   if (!rows.length) return empty('No students match.');
-  return '<div class="tbl-wrap"><table><thead><tr><th></th><th>Student</th><th>Year</th><th>University</th>' + (admin ? '<th>Status</th><th>Supervisor</th>' : '') + '<th>Current posting</th><th>Dissertation</th><th>Pending</th></tr></thead><tbody>' +
+  return '<div class="tbl-wrap"><table><thead><tr><th></th><th>Student</th><th>Year</th><th>University</th>' + (admin ? '<th>Status</th><th>Supervisor</th>' : '') + '<th>Current posting</th><th>Dissertation</th>' + (scheme().length ? '<th>Progress</th>' : '') + '<th>Pending</th></tr></thead><tbody>' +
     rows.map(function (s) {
-      var cp = currentPosting(s.id), th = thesis(s.id), p = pendingFor(s.id);
+      var cp = currentPosting(s.id), th = thesis(s.id), p = pendingFor(s.id), rv = reviewsOf(s.id)[0], old = rv && rv.period !== period();
       return '<tr class="click" data-go="student/' + esc(s.id) + '"><td style="width:24px">' + riskDot(s.id) + '</td><td class="name">' + esc(s.name) + '<div class="small muted">' + esc(s.program || '') + (s.archived ? ' · <span class="badge">Archived</span>' : '') + '</div></td>' +
         '<td class="nowrap">' + esc(yearLabel(s)) + '</td><td>' + esc(s.university) + '</td>' +
         (admin ? '<td>' + statusBadge(s.status) + '</td><td class="small">' + esc(supName(s.supervisorId) || '—') + '</td>' : '') +
         '<td class="small">' + (cp ? '<b>' + esc(cp.place) + '</b><div class="faint">until ' + fd(cp.endDate) + '</div>' : '<span class="faint">' + esc(s.dept || '—') + '</span>') + '</td>' +
         '<td style="min-width:110px">' + bar(th.pct, true) + '<div class="small faint">' + th.done + '/' + th.total + '</div></td>' +
+        (scheme().length ? '<td class="nowrap">' + lamps(rv, old) + (old ? '<div class="small faint">' + esc(rv.period) + '</div>' : '') + '</td>' : '') +
         '<td>' + (p.n ? '<span class="badge warn">' + p.n + '</span>' : '<span class="faint">—</span>') + '</td></tr>';
     }).join('') + '</tbody></table></div>';
 }
@@ -976,12 +1169,13 @@ VIEWS.common.student = function (id) {
     ['Programme', st.program], ['University', st.university], ['Year / stage', yearLabel(st)], ['Status', st.status],
     ['Department now', [st.dept, st.deptPeriod && st.deptPeriod !== 'NOW' ? st.deptPeriod : ''].filter(Boolean).join(' · ')],
     ['EDHKL supervisor', supName(st.supervisorId)], ['University supervisor', st.uniSupervisor], ['Reported', fd(st.reportDate)], ['Ends', fd(st.endDate)],
-    ['MMC', st.mmc]].concat(admin ? [['IC', st.ic]] : []).concat([['Phone', st.phone], ['Email', st.email]]).concat(admin ? [['Address', st.address], ['File no.', st.fileNo], ['Thumb / punch', st.attendance], ['First degree', st.degree], ['Intake', st.intake], ['Expected graduation', fd(st.expectedGraduation)], ['Notes', st.notes]] : []));
+    ['MMC', st.mmc], ['IC', st.ic], ['Phone', st.phone], ['Email', st.email], ['Address', st.address]].concat(admin ? [['File no.', st.fileNo], ['Thumb / punch', st.attendance], ['First degree', st.degree], ['Intake', st.intake], ['Expected graduation', fd(st.expectedGraduation)], ['Notes', st.notes]] : []));
   return '<div class="page-h"><a class="btn sm ghost" href="#/students">← Students</a></div>' +
-    '<div class="card hero" style="margin-bottom:14px"><div class="avatar">' + esc(initials(st.name)) + '</div><div style="flex:1;min-width:220px"><h1>' + esc(st.name) + '</h1>' +
+    '<div class="card hero" style="margin-bottom:14px">' + avatar(st, 'lg') + '<div style="flex:1;min-width:220px"><h1>' + esc(st.name) + '</h1>' +
     '<div class="meta">' + riskDot(id) + statusBadge(st.status) + '<span class="badge">' + esc(yearLabel(st)) + '</span>' + (st.archived ? '<span class="badge bad">Archived</span>' : '') + '</div></div>' +
-    (admin ? '<div class="row-actions"><button class="btn" data-act="stuEdit" data-id="' + esc(id) + '">Edit details</button><button class="btn ' + (st.archived ? '' : 'bad') + '" data-act="stuArchive" data-id="' + esc(id) + '">' + (st.archived ? 'Restore' : 'Archive') + '</button></div>' : '') + '</div>' +
+    (admin ? '<div class="row-actions"><button class="btn" data-act="photoPick" data-id="' + esc(id) + '">' + (st.photoId ? 'Change photo' : 'Upload photo') + '</button><button class="btn" data-act="stuEdit" data-id="' + esc(id) + '">Edit details</button><button class="btn ' + (st.archived ? '' : 'bad') + '" data-act="stuArchive" data-id="' + esc(id) + '">' + (st.archived ? 'Restore' : 'Archive') + '</button></div>' : '') + '</div>' +
     '<div class="grid g3" style="align-items:start"><div class="span2 stack">' +
+      reviewCard(id, true) +
       card('Postings', timeline(id, admin), admin ? '<button class="btn sm" data-act="postNew" data-id="' + esc(id) + '">Add posting</button>' : '') +
       card('Dissertation <span class="badge">' + th.done + '/' + th.total + '</span>', milestoneList(th.ms, admin ? 'admin' : 'supervisor'),
         admin ? '<button class="btn sm" data-act="msNew" data-id="' + esc(id) + '">Add</button><button class="btn sm" data-act="msTemplate" data-id="' + esc(id) + '">Add template milestones</button>' : '') +
@@ -1016,6 +1210,18 @@ VIEWS.Admin.dashboard = function () {
     var over = p[1] > cap[p[0]];
     return '<li><div class="main"><div class="t">' + esc(p[0]) + '</div>' + bar(p[1] * 100 / cap[p[0]], true) + '</div><span class="mono ' + (over ? '' : 'muted') + '" style="' + (over ? 'color:var(--bad);font-weight:600' : '') + '">' + p[1] + '/' + cap[p[0]] + '</span></li>';
   });
+  var per = period(), ratedN = all.filter(function (s) { return reviewIn(s.id, per); }).length;
+  var watch = all.map(function (s) { var rv = reviewIn(s.id, per); return { s: s, rv: rv, w: worst(rv) }; })
+    .filter(function (x) { return x.w === 'red' || x.w === 'amber'; })
+    .sort(function (a, b) { return (a.w === 'red' ? 0 : 1) - (b.w === 'red' ? 0 : 1) || a.s.name.localeCompare(b.s.name); });
+  var reviewRow = !scheme().length ? '' : '<div class="grid g3" style="margin-bottom:14px"><div class="span2">' +
+    card('Progress review <span class="badge acc">' + esc(per) + '</span>', '<p class="small muted" style="margin:0 0 12px">' + ratedN + ' of ' + all.length + ' active students rated for this period</p>' +
+      reviewBars(all, per) + '<div style="margin-top:14px">' + lampLegend() + '</div>', '<a class="btn sm" href="#/report">Open report</a>') + '</div>' +
+    card('Needs monitoring <span class="badge">' + watch.length + '</span>', watch.length ? '<ul class="list">' + watch.map(function (x) {
+      var items = scheme().filter(function (f) { var c = rateColor(f, x.rv[f.key]); return c === 'red' || c === 'amber'; })
+        .map(function (f) { return f.label + ': ' + x.rv[f.key]; }).join(' · ');
+      return '<li data-go="student/' + esc(x.s.id) + '" style="cursor:pointer"><span style="padding-top:5px">' + lamp(x.w) + '</span><div class="main"><div class="t">' + esc(x.s.name) + '</div><div class="d">' + esc(items) + '</div></div></li>';
+    }).join('') + '</ul>' : '<p class="muted small" style="margin:0">' + (ratedN ? 'No amber or red ratings this period.' : 'No ratings recorded for this period yet.') + '</p>') + '</div>';
   var since = Math.round((Date.now() - S.loadedAt) / 60000);
   return '<div class="page-h"><div><h1>Dashboard</h1><div class="sub">' + esc(set_().DEPARTMENT_NAME || '') + '</div></div><span class="spacer"></span>' +
     '<span class="small faint">Data loaded ' + (since < 1 ? 'just now' : since + ' min ago') + '</span><button class="btn sm" data-act="reload">Reload from Sheet</button></div>' +
@@ -1029,7 +1235,7 @@ VIEWS.Admin.dashboard = function () {
       card('By status', bars(count(function (s) { return s.status; }), 'status')) +
       card('By university', bars(count(function (s) { return s.university; }), 'university')) +
       card('By year / stage', bars(count(yearLabel), 'year')) +
-    '</div><div class="grid g3">' +
+    '</div>' + reviewRow + '<div class="grid g3">' +
       '<div class="span2">' + card('Postings ending soon', soon.length ? '<div class="tbl-wrap"><table><thead><tr><th>Student</th><th>Place</th><th>Ends</th><th>Left</th><th>Next</th></tr></thead><tbody>' + soon.map(function (x) {
         var np = nextPosting(x.s.id);
         return '<tr class="click" data-go="student/' + esc(x.s.id) + '"><td class="name">' + esc(x.s.name) + '</td><td>' + esc(x.p.place) + '</td><td class="nowrap">' + fd(x.p.endDate) + '</td><td class="mono">' + x.left + 'd</td><td class="small">' + (np ? esc(np.place) + ' · ' + fd(np.startDate) : '<span class="badge warn">None planned</span>') + '</td></tr>';
@@ -1048,6 +1254,7 @@ function adminFilterRows() {
     if (f.year && yearLabel(s) !== f.year) return false;
     if (f.supervisor && s.supervisorId !== f.supervisor) return false;
     if (f.risk && risk(s.id).level !== f.risk) return false;
+    if (f.progress && worst(reviewIn(s.id, period())) !== f.progress) return false;
     if (f.noEmail && s.email) return false;
     if (f.soon) { var cp = currentPosting(s.id); if (!cp || !cp.endDate || daysBetween(t, cp.endDate) > num('POSTING_ENDING_SOON_DAYS', 60)) return false; }
     if (q && (s.name + ' ' + s.mmc + ' ' + s.email + ' ' + s.dept + ' ' + s.university).toLowerCase().indexOf(q) < 0) return false;
@@ -1073,6 +1280,7 @@ VIEWS.Admin.students = function () {
       sel('status', 'Any status', uniq(function (s) { return s.status; })) + sel('university', 'Any university', uniq(function (s) { return s.university; })) +
       sel('year', 'Any year', uniq(yearLabel)) + sel('supervisor', 'Any supervisor', S.d.supervisors.slice().sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (s) { return [s.id, s.name]; })) +
       sel('risk', 'Any flag', [['red', 'Red'], ['amber', 'Amber'], ['green', 'Green']]) +
+      (scheme().length ? sel('progress', 'Any progress', [['red', 'Has a red rating'], ['amber', 'Amber, no red'], ['green', 'All green'], ['none', 'Not rated this period']]) : '') +
       '<label class="chk"><input type="checkbox" data-filter="archived"' + (f.archived ? ' checked' : '') + '> Archived</label>' +
       chips.map(function (c) { return '<span class="badge acc">' + esc(c) + '</span>'; }).join('') +
       (Object.keys(f).some(function (k) { return f[k]; }) || S.ui.q ? '<button class="btn sm ghost" data-act="dashFilter" data-k="clear">Clear filters</button>' : '') +
@@ -1132,7 +1340,8 @@ VIEWS.Admin.settings = function () {
     SYSTEM_NAME: 'System name', DEPARTMENT_NAME: 'Department name', STUDENT_STATUSES: 'Student statuses (separate with |)', STAGES: 'Stages (separate with |)',
     PROGRAMS: 'Programmes', LEAVE_TYPES: 'Leave types', ANNUAL_LEAVE_ENTITLEMENT: 'Annual leave days per year', EMERGENCY_LEAVE_ENTITLEMENT: 'Emergency leave days per year',
     POSTING_ENDING_SOON_DAYS: '"Ending soon" warning (days)', DISSERTATION_STALE_DAYS: 'No dissertation update warning (days)', REMINDER_DAYS: 'Approval waiting warning (days)',
-    DISSERTATION_TEMPLATE: 'Milestone template for new students', DEPT_CAPACITY: 'Department capacity (DEPT:number|…)'
+    DISSERTATION_TEMPLATE: 'Milestone template for new students', DEPT_CAPACITY: 'Department capacity (DEPT:number|…)',
+    REVIEW_PERIOD: 'Progress review period (blank = automatic: ' + period() + ')'
   };
   var keys = Object.keys(LABEL).concat(Object.keys(st).filter(function (k) { return !LABEL[k]; }).sort());
   var hol = S.d.holidays.slice().sort(function (a, b) { return a.date.localeCompare(b.date); });
@@ -1143,6 +1352,64 @@ VIEWS.Admin.settings = function () {
     card('Public holidays', (hol.length ? '<ul class="list">' + hol.map(function (h) {
       return '<li><div class="main"><div class="t">' + esc(h.name) + '</div><div class="d">' + fd(h.date) + '</div></div><button class="btn sm bad" data-act="holDel" data-id="' + esc(h.id) + '">Remove</button></li>';
     }).join('') + '</ul>' : empty('None yet. Leave days skip these dates.')), '<button class="btn sm" data-act="holNew">Add</button>') + '</div>';
+};
+
+/** Meeting slides built from the ratings: cover, summary, supervisor list, then one slide per trainee. */
+VIEWS.Admin.report = function () {
+  var ui = S.ui.rep, cur = period();
+  var periods = {}; periods[cur] = 1;
+  S.d.reviews.forEach(function (r) { if (r.period) periods[r.period] = 1; });
+  var per = periods[ui.period] ? ui.period : cur;
+  var active = S.d.students.filter(function (s) { return !s.archived; }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+  var rated = active.filter(function (s) { return reviewIn(s.id, per); });
+  var shown = ui.unrated ? active : rated;
+  var groups = {}, order = [];
+  shown.forEach(function (s) { var k = s.supervisorId || ''; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(s); });
+  order.sort(function (a, b) { return (a ? 0 : 1) - (b ? 0 : 1) || supName(a).localeCompare(supName(b)); });
+  var count = function (c) { return rated.filter(function (s) { return worst(reviewIn(s.id, per)) === c; }).length; };
+  var set = set_();
+
+  var cover = '<section class="slide cover"><div class="muted">' + esc(set.DEPARTMENT_NAME || '') + '</div><h2>Trainee Progress Review</h2>' +
+    '<div class="lead">' + esc(set.SYSTEM_NAME || 'HKL-PoMS') + '</div><div class="meta hero"><span class="badge acc">' + esc(per) + '</span>' +
+    '<span class="badge">Prepared ' + fd(today()) + '</span><span class="badge">' + plural(shown.length, 'trainee') + ' · ' + plural(order.filter(Boolean).length, 'supervisor') + '</span></div></section>';
+
+  var summary = '<section class="slide"><h2>Summary</h2><p class="lead">' + rated.length + ' of ' + active.length + ' active trainees rated for ' + esc(per) + '</p>' +
+    '<div class="grid g4" style="margin-bottom:18px">' + tile('Trainees', active.length, 'active') + tile('All green', count('green'), 'every rated item on track', 'ok') +
+    tile('Needs monitoring', count('amber'), 'amber, no red', count('amber') ? 'warn' : '') + tile('Behind', count('red'), 'at least one red item', count('red') ? 'bad' : '') + '</div>' +
+    reviewBars(active, per) + '<div style="margin-top:14px">' + lampLegend() + '</div></section>';
+
+  var alloc = '<section class="slide"><h2>Supervisors and trainees</h2><p class="lead">The mark beside each name is the trainee\'s worst rating this period</p>' +
+    '<table><thead><tr><th>EDHKL supervisor</th><th>Trainees</th><th style="text-align:right">Load</th></tr></thead><tbody>' + order.map(function (k) {
+      return '<tr><td class="name">' + esc(k ? supName(k) : 'No supervisor assigned') + '</td><td>' + groups[k].map(function (s) {
+        return '<div style="display:flex;gap:8px;align-items:center;padding:2px 0">' + lamp(worst(reviewIn(s.id, per))) + '<span>' + esc(s.name) + ' <span class="faint small">' + esc(s.university || '') + '</span></span></div>';
+      }).join('') + '</td><td class="mono" style="text-align:right">' + groups[k].length + '</td></tr>';
+    }).join('') + '</tbody></table></section>';
+
+  var slides = order.map(function (k) {
+    return groups[k].map(function (s) {
+      var rv = reviewIn(s.id, per), cp = currentPosting(s.id);
+      var done = postingsOf(s.id).filter(function (p) { return p.status === 'Approved' && timing(p).key === 'done'; }).map(function (p) { return p.place; });
+      var facts = (ui.ic ? [['IC', s.ic]] : []).concat([
+        ['Reported', fd(s.reportDate)], ['In department', s.reportDate || s.endDate ? fd(s.reportDate) + ' – ' + fd(s.endDate) : ''], ['Status', s.status],
+        ['Current posting', cp ? cp.place + ' (' + fd(cp.startDate) + ' – ' + fd(cp.endDate) + ')' : s.dept],
+        ['Postings completed', done.join(', ')], ['University supervisor', s.uniSupervisor]]);
+      return '<section class="slide"><div class="hero" style="margin-bottom:18px">' + avatar(s, 'lg') + '<div style="flex:1;min-width:220px"><h2>' + esc(s.name) + '</h2>' +
+        '<div class="muted">' + esc([s.program, s.university, yearLabel(s)].filter(Boolean).join(' · ')) + '</div></div>' +
+        '<div class="sup"><div class="muted">EDHKL supervisor</div><b>' + esc(k ? supName(k) : 'Not assigned') + '</b></div></div>' +
+        '<div class="cols"><div>' + kv(facts) + '</div><div>' + researchHead(s.id) +
+        (rv ? reviewTiles(rv) + (rv.comment ? '<div class="rv-note"><span class="muted small">Supervisor comment</span><br>' + esc(rv.comment) + '</div>' : '')
+            : '<p class="muted" style="margin:0">Not rated for ' + esc(per) + '.</p>') + '</div></div></section>';
+    }).join('');
+  }).join('');
+
+  return '<div class="page-h noprint"><div><h1>Report</h1><div class="sub">Slides for the supervisor and trainee meeting, built from the saved ratings</div></div><span class="spacer"></span>' +
+    '<button class="btn pri" data-act="print">Print or save as PDF</button></div>' +
+    '<div class="toolbar"><select class="input" data-rep="period" aria-label="Review period">' + Object.keys(periods).sort().reverse().map(function (p) {
+      return '<option' + (p === per ? ' selected' : '') + '>' + esc(p) + '</option>';
+    }).join('') + '</select>' +
+    '<label class="chk"><input type="checkbox" data-rep="unrated"' + (ui.unrated ? ' checked' : '') + '> Include trainees not yet rated</label>' +
+    '<label class="chk"><input type="checkbox" data-rep="ic"' + (ui.ic ? ' checked' : '') + '> Show IC numbers</label></div>' +
+    (scheme().length ? '<div class="report">' + cover + summary + alloc + slides + '</div>' : card('Report not available yet', '<p class="muted" style="margin:0">The server has not been updated for progress ratings.</p>'));
 };
 
 var AUDIT = { rows: null, loading: false };
@@ -1210,14 +1477,21 @@ var A = {
         run('extension.request', v, { done: 'Extension request sent.', optimistic: function () { tmp('postings', { studentId: myId(), type: 'Extension', place: v.place, startDate: v.startDate, endDate: v.endDate, status: 'Pending', reason: v.reason }); } }).catch(function () {});
       } });
   },
-  profileEdit: function () {
-    var st = IX.stu[myId()];
-    form({ title: 'Edit contact details', fields: [
-      { name: 'phone', label: 'Phone', type: 'tel', value: st.phone, max: 40 },
-      { name: 'email', label: 'Email (used to sign in)', type: 'email', value: st.email, required: true, max: 120 },
-      { name: 'address', label: 'Address', type: 'textarea', value: st.address, max: 300 }],
-      validate: function (v) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.email) ? '' : 'Please enter a valid email.'; },
-      onSubmit: function (v) { run('profile.update', v, { done: 'Profile updated.', optimistic: function () { patch('students', myId(), v); } }).catch(function () {}); } });
+  profileEdit: function () { studentForm(IX.stu[myId()], true); },
+  photoPick: function (id) {
+    var sid = id || myId(), inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = function () {
+      var file = inp.files && inp.files[0];
+      if (!file) return;
+      shrinkPhoto(file).then(function (url) {
+        return run('photo.upload', { studentId: sid, data: url }, { done: 'Photo saved.' }).then(function (res) {
+          var row = (res.changed.Students || [])[0];
+          if (row) { PHOTOS[sid] = { key: row.photoId, url: url }; render(); }
+        });
+      }, function (e) { toast(e.message, 'bad'); }).catch(function () {});
+    };
+    inp.click();
   },
 
   /* supervisor + admin */
@@ -1246,7 +1520,31 @@ var A = {
       onSubmit: function (v) { run('milestone.setTarget', { id: id, targetDate: v.targetDate }, { done: 'Target date saved.', optimistic: function () { patch('milestones', id, v); } }).catch(function () {}); } });
   },
 
+  rate: function (sid) {
+    var st = IX.stu[sid], cur = reviewIn(sid, period()), prev = reviewsOf(sid).filter(function (r) { return r !== cur; })[0];
+    var fields = [{ name: 'researchTitle', label: 'Research project title', value: st.researchTitle, full: true, max: 300 }].concat(scheme().map(function (f) {
+      return { name: 'r_' + f.key, label: f.label, type: 'select', value: cur ? cur[f.key] : '',
+        options: [{ value: '', label: '— not rated —' }].concat(f.options.map(function (o) { return o[0]; })),
+        hint: !cur && prev && prev[f.key] ? 'Last time (' + prev.period + '): ' + prev[f.key] : '' };
+    }), [{ name: 'comment', label: 'Comment for the review meeting', type: 'textarea', value: cur ? cur.comment : '', full: true, max: 1000, hint: 'Seen by supervisors and admins. Not shown to the student.' }]);
+    var pick = function (v) { var o = {}; scheme().forEach(function (f) { o[f.key] = v['r_' + f.key] || ''; }); return o; };
+    form({ title: 'Rate progress · ' + st.name, wide: true, submit: 'Save rating',
+      intro: 'Review period: <b>' + esc(period()) + '</b>. ' + (cur ? 'You are updating the rating already saved for this period.' : 'This starts a new rating for this period.'),
+      fields: fields,
+      preview: function (v) { var r = pick(v); return worst(r) === 'none' ? '' : 'Preview &nbsp;' + lamps(r); },
+      validate: function (v) { return worst(pick(v)) === 'none' ? 'Choose at least one rating.' : ''; },
+      onSubmit: function (v) {
+        var r = pick(v);
+        run('review.save', { studentId: sid, ratings: r, comment: v.comment, researchTitle: v.researchTitle }, { done: 'Rating saved.', optimistic: function () {
+          var row = Object.assign({}, r, { comment: v.comment, ratedBy: S.me.name, ratedAt: nowStamp() });
+          if (cur) patch('reviews', cur.id, row); else tmp('reviews', Object.assign(row, { studentId: sid, period: period() }));
+          patch('students', sid, { researchTitle: v.researchTitle });
+        } }).catch(function () {});
+      } });
+  },
+
   /* admin */
+  print: function () { window.print(); },
   extDecide: function (id, el) {
     var p = find('postings', id), ok = el.getAttribute('data-v') === 'approve';
     form({ title: (ok ? 'Approve' : 'Reject') + ' extension · ' + stuName(p.studentId), submit: ok ? 'Approve' : 'Reject',
@@ -1318,11 +1616,14 @@ var A = {
     if (parseRoute().name === 'students') render(); else go('students');
   },
   exportCsv: function () {
-    var cols = ['id', 'name', 'ic', 'mmc', 'program', 'university', 'year', 'stage', 'status', 'dept', 'supervisor', 'uniSupervisor', 'reportDate', 'endDate', 'phone', 'email', 'currentPosting', 'currentPostingEnds', 'milestonesVerified', 'flag'];
-    var cell = function (v) { v = String(v == null ? '' : v); if (/^[=+\-@]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var cols = ['id', 'name', 'ic', 'mmc', 'program', 'university', 'year', 'stage', 'status', 'dept', 'supervisor', 'uniSupervisor', 'reportDate', 'endDate', 'phone', 'email', 'currentPosting', 'currentPostingEnds', 'milestonesVerified', 'flag', 'researchTitle', 'reviewPeriod']
+      .concat(scheme().map(function (f) { return 'review_' + f.key; }));
+    var cell =function (v) { v = String(v == null ? '' : v); if (/^[=+\-@]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     var lines = [cols.join(',')].concat(adminFilterRows().map(function (s) {
       var cp = currentPosting(s.id), th = thesis(s.id);
       var o = Object.assign({}, s, { supervisor: supName(s.supervisorId), currentPosting: cp ? cp.place : '', currentPostingEnds: cp ? cp.endDate : '', milestonesVerified: th.done + '/' + th.total, flag: risk(s.id).level });
+      var rv = reviewsOf(s.id)[0];
+      if (rv) { o.reviewPeriod = rv.period; scheme().forEach(function (f) { o['review_' + f.key] = rv[f.key]; }); }
       return cols.map(function (c) { return cell(o[c]); }).join(',');
     }));
     var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
@@ -1360,14 +1661,15 @@ function leaveForm(o, cb) {
     onSubmit: function (v) { v.endDate = v.endDate || v.startDate; cb(v); } });
 }
 
-function studentForm(st) {
+/** Fields only the admin may change; students edit everything else on their own record. */
+var ADMIN_ONLY = ['status', 'dept', 'deptPeriod', 'supervisorId', 'reportDate', 'endDate', 'leaveEntitlement', 'notes'];
+
+function studentForm(st, self) {
   var s = st || {}, set = set_();
   var sups = [{ value: '', label: '— none —' }].concat(S.d.supervisors.filter(function (x) { return x.active !== false || x.id === s.supervisorId; })
     .sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (x) { return { value: x.id, label: x.name }; }));
   var opt = function (k, cur) { var l = list(set[k]); if (cur && l.indexOf(cur) < 0) l.push(cur); return l; };
-  form({ title: st ? 'Edit ' + st.name : 'Add student', wide: true, submit: st ? 'Save changes' : 'Add student',
-    intro: st ? '' : 'Dissertation milestones from the template are added automatically.',
-    fields: [
+  var fields = [
       { name: 'name', label: 'Full name', value: s.name, required: true, full: true, max: 120 },
       { name: 'ic', label: 'IC number', value: s.ic, max: 20 }, { name: 'mmc', label: 'MMC number', value: s.mmc, max: 20 },
       { name: 'email', label: 'Email (sign-in)', type: 'email', value: s.email, max: 120 }, { name: 'phone', label: 'Phone', type: 'tel', value: s.phone, max: 40 },
@@ -1387,10 +1689,24 @@ function studentForm(st) {
       { name: 'degree', label: 'First degree', value: s.degree, max: 120 }, { name: 'intake', label: 'Intake', value: s.intake, max: 40 },
       { name: 'expectedGraduation', label: 'Expected graduation', type: 'date', value: s.expectedGraduation },
       { name: 'leaveEntitlement', label: 'Annual leave (override)', type: 'number', value: s.leaveEntitlement, hint: 'Blank = ' + (set.ANNUAL_LEAVE_ENTITLEMENT || 30) + ' days' },
+      { name: 'researchTitle', label: 'Research / dissertation title', value: s.researchTitle, full: true, max: 300 },
       { name: 'altEmails', label: 'Other emails (sign-in)', value: s.altEmails, full: true, max: 300, hint: 'Separate with commas' },
       { name: 'address', label: 'Address', type: 'textarea', value: s.address, full: true, max: 300 },
       { name: 'notes', label: 'Admin notes', type: 'textarea', value: s.notes, full: true, max: 1000 }
-    ],
+  ];
+  if (self) {
+    form({ title: 'Edit my details', wide: true, submit: 'Save changes',
+      intro: 'Your supervisor, status, department and study dates are set by the admin. Ask the admin if they need changing.',
+      fields: fields.filter(function (f) { return ADMIN_ONLY.indexOf(f.name) < 0; }).map(function (f) {
+        return f.name === 'email' ? Object.assign({}, f, { required: true }) : f;
+      }),
+      validate: function (v) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.email) ? '' : 'Please enter a valid email.'; },
+      onSubmit: function (v) { run('profile.update', { fields: v }, { done: 'Profile updated.', optimistic: function () { patch('students', st.id, v); } }).catch(function () {}); } });
+    return;
+  }
+  form({ title: st ? 'Edit ' + st.name : 'Add student', wide: true, submit: st ? 'Save changes' : 'Add student',
+    intro: st ? '' : 'Dissertation milestones from the template are added automatically.',
+    fields: fields,
     onSubmit: function (v) {
       run('student.save', { id: st ? st.id : '', fields: v }, { done: st ? 'Saved.' : 'Student added.', optimistic: st ? function () { patch('students', st.id, v); } : null })
         .then(function (r) { if (!st && r && r.changed.Students) go('student/' + r.changed.Students[0].id); }).catch(function () {});
@@ -1482,6 +1798,8 @@ document.addEventListener('change', function (e) {
   var k = e.target.getAttribute('data-filter');
   if (k) { S.ui.f[k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; delete S.ui.f.soon; delete S.ui.f.noEmail; render(); }
   if (e.target.getAttribute('data-act-change') === 'planUni') { S.ui.planUni = e.target.value; render(); }
+  var rk = e.target.getAttribute('data-rep');
+  if (rk) { S.ui.rep[rk] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; render(); }
 });
 
 /* Refresh quietly when the tab comes back after a while, so data from other users shows up. */
